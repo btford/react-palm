@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "jsx": "react",
+        "sourceMap": true
+    },
+    "filesGlob": [
+      "./typings/index.d.ts",
+      "./*.ts",
+      "./test/*.ts",
+      "./example/**.ts",
+      "./example/**.tsx",
+      "./example/task-handler/*.ts",
+      "./example/test/*.ts"
+    ]
+}
