@@ -18,7 +18,7 @@ This means that as your app grows, you won't have to rethink everything.
 Ideally, you should use Elm. This architecture is the closest thing to Elm I've managed to
 make within the constraints of JavaScript and React.
 
-Chuu looks good too.
+[Choo](https://github.com/yoshuawuyts/choo) looks good too.
 
 ## license
 MIT
