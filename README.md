@@ -1,5 +1,7 @@
 # react-palm
 
+[![Build Status](https://travis-ci.org/btford/react-palm.svg?branch=master)](https://travis-ci.org/btford/react-palm)
+
 ** This is very work in progress, please don't bother me about it, thanks. **
 
 A cohesive strategy for managing state, handling side effects, and testing React Apps.
