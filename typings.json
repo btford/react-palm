@@ -3,6 +3,7 @@
     "core-js": "registry:dt/core-js#0.0.0+20160602141332"
   },
   "dependencies": {
+    "enzyme": "registry:npm/enzyme#2.2.0+20160322031343",
     "react": "registry:npm/react#15.0.1+20160601175240",
     "react-dom": "registry:npm/react-dom#15.0.1+20160705210405",
     "react-redux": "registry:npm/react-redux#4.4.0+20160614222153",
