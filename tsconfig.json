@@ -11,7 +11,7 @@
       "./test/*.ts",
       "./example/**.ts",
       "./example/**.tsx",
-      "./example/task-handler/*.ts",
-      "./example/test/*.ts"
+      "./example/tasks/*.ts",
+      "./example/test/**/*.ts"
     ]
 }
