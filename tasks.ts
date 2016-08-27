@@ -12,8 +12,8 @@ export interface Task {
 }
 
 export interface Action {
-  type: any;
-  payload: any;
+  type : any;
+  payload? : any;
 }
 
 // Dispatch is the dispatch provided by the redux store API
