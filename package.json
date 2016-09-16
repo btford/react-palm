@@ -1,6 +1,6 @@
 {
   "name": "react-palm",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Elm-like architecture for React apps",
   "main": "tasks.js",
   "directories": {
