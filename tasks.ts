@@ -78,6 +78,7 @@ export const taskMiddleware = store => next => action => {
     taskHandlers.forEach((tasks, handler) => handler(tasks, dispatch));
 
     tasks = [];
+    lastWithTaskCall = null;
   }
 
   return returnValue;
