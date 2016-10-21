@@ -28,6 +28,8 @@ type TaskHandler = (tasks: Task[], dispatch: Dispatch) => void;
  * Implementation
  */
 const TASK_TYPE_TO_HANDLER = Symbol('TASK_TYPE_TO_HANDLER');
+const CACHED_PROMISE = Promise.resolve();
+const makeDispatchAsync = dispatch => action => CACHED_PROMISE.then(() => dispatch(action));
 
 let tasks : Task[] = [];
 
@@ -56,7 +58,7 @@ export const taskMiddleware = store => next => action => {
   }
 
   next(action);
-  const dispatch = store.dispatch;
+  const dispatch = makeDispatchAsync(store.dispatch);
 
   if (tasks.length > 0) {
 
