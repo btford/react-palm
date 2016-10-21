@@ -54,7 +54,8 @@ export const taskMiddleware = store => next => action => {
   if (tasks.length > 0) {
     throw lastWithTaskCall;
   }
-  const returnValue = next(action);
+
+  next(action);
   const dispatch = store.dispatch;
 
   if (tasks.length > 0) {
@@ -75,13 +76,15 @@ export const taskMiddleware = store => next => action => {
       }
     });
 
-    taskHandlers.forEach((tasks, handler) => handler(tasks, dispatch));
+    const out = [];
+    taskHandlers.forEach((tasks, handler) => out.push(handler(tasks, dispatch)));
 
     tasks = [];
     lastWithTaskCall = null;
+    return Promise.all(out);
   }
 
-  return returnValue;
+  return Promise.resolve(null);
 };
 
 /*
