@@ -25,14 +25,12 @@ const DEFAULT_ACTION_NAME = 'ACTION';
  * ```
  */
 export function createAction(name = DEFAULT_ACTION_NAME): ActionCreator {
-  function action(payload = {}) {
-    return {type: action, payload};
-  }
+  const action = (payload = {}) => ({type: action, payload});
 
   const uniqueSymbol = Symbol(name);
 
   if (name !== DEFAULT_ACTION_NAME) {
-    action.name = name;
+    Object.defineProperty(action, 'name', {value: name});
   }
 
   (<any>action).toString = () => uniqueSymbol;
