@@ -54,7 +54,9 @@ export function makeTaskType(type: TaskType, handler: TaskHandler): TaskType {
  */
 export const taskMiddleware = store => next => action => {
   if (tasks.length > 0) {
-    throw lastWithTaskCall;
+    const err = lastWithTaskCall;
+    lastWithTaskCall = null;
+    throw err;
   }
 
   next(action);
