@@ -57,12 +57,12 @@ export function createAction(name = DEFAULT_ACTION_NAME): ActionCreator {
  * handler key, and enforces the "flux standard action" spec.
  */
 export function strictHandleActions<S>(handlersMap: Handlers<S>, initialState: S): Handler<S> {
-  return function actionHandler(state: S, action: Action) {
+  return function actionHandler(state: S, action: Action, ...extra: any[]) {
     if (state === undefined) {
       return initialState;
     }
     if (action[ACTION_CREATOR]) {
-      const actionName = (<any>action).name || action.toString();
+      const actionName = toString(action);
       throw new Error(
         'Reducer should be called with an action, not an action creator. ' +
         `Try "dispatch(${actionName}())" instead of "dispatch(${actionName})"`
@@ -70,17 +70,14 @@ export function strictHandleActions<S>(handlersMap: Handlers<S>, initialState: S
     }
     const handler = handlersMap[action.type];
     if (handler) {
-      if (!action.payload) {
-        throw new Error(`Action of type "${action.type}" does not have a "payload" property.`);
-      }
       const result = handler(state, action.payload, ...extra);
       if (result === void 0) {
-        throw new Error(`Action of type "${action.type}" returned "undefined".`);
+        throw new Error(`Handler for action of type "${toString(action.type)}" returned "undefined".`);
       }
       return result;
     }
 
-    throw new Error(`Unknown action type "${action.type}".`);
+    throw new Error(`Unknown action type "${toString(action.type)}".`);
   };
 }
 
@@ -97,12 +94,21 @@ export function laxHandleActions<S>(handlersMap: Handlers<S>, initialState: S): 
     if (handler) {
       // if it's a "flux standard action" just call with the payload to reduce boilerplate
       if (!action.payload) {
-        return handler(state, action);
+        return handler(state, action, ...extra);
       }
-      return handler(state, action.payload);
+      return handler(state, action.payload, ...extra);
     }
     return state;
   };
+}
+
+function toString(maybeString: any) {
+  if (typeof maybeString === 'function' && maybeString.name) {
+     return maybeString.name;
+  }
+  while (typeof maybeString !== 'string') {
+    maybeString = maybeString.toString();
+  }
 }
 
 export const handleActions = strictHandleActions;
