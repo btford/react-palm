@@ -8,7 +8,7 @@ interface Action {
 }
 
 type ActionCreator = (payload?: any) => Action;
-type Handler<S> = (state: S, payload: any) => S;
+type Handler<S> = (state: S, payload: any, ...extra: any[]) => S;
 type Handlers<S> = {[action: string]: Handler<S>};
 
 const ACTION_CREATOR = Symbol('ACTION_CREATOR');
@@ -73,8 +73,7 @@ export function strictHandleActions<S>(handlersMap: Handlers<S>, initialState: S
       if (!action.payload) {
         throw new Error(`Action of type "${action.type}" does not have a "payload" property.`);
       }
-      const result = handler(state, action.payload);
-
+      const result = handler(state, action.payload, ...extra);
       if (result === void 0) {
         throw new Error(`Action of type "${action.type}" returned "undefined".`);
       }
@@ -90,7 +89,7 @@ export function strictHandleActions<S>(handlersMap: Handlers<S>, initialState: S
  * actions.
  */
 export function laxHandleActions<S>(handlersMap: Handlers<S>, initialState: S): Handler<S> {
-  return function actionHandler(state, action) {
+  return function actionHandler(state, action, ...extra) {
     if (state === undefined) {
       return initialState;
     }

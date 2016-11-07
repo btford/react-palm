@@ -1,4 +1,5 @@
 import test from 'ava';
+import {spy, stub} from 'sinon';
 import {handleActions, laxHandleActions, createAction} from '../actions';
 
 const MY_ACTION = createAction();
@@ -51,6 +52,20 @@ test('handleActions reducer throws when called without a payload', (t) => {
   t.throws(() => reducer({}, {type: MY_ACTION}));
 });
 
+test('handleActions reducer passes extra params to handler', (t) => {
+  const handler = stub();
+  handler.returns({});
+
+  // TODO: provide a builder API for TS so you don't have to do this `toString` hack
+  const reducer = handleActions({
+    [MY_ACTION.toString()]: handler
+  }, {});
+
+  reducer({}, MY_ACTION(123), 'extra1', {extra: 2});
+
+  t.deepEqual(handler.firstCall.args, [{}, 123, 'extra1', {extra: 2}]);
+});
+
 
 test('laxHandleActions works', (t) => {
   const reducer = laxHandleActions({
@@ -93,4 +108,16 @@ test('laxHandleActions reducer passes entire action when called without a payloa
   const action = {type: MY_ACTION};
 
   t.is(reducer({}, action), action);
+});
+
+test('laxHandleActions reducer passes extra params to handler', (t) => {
+  const handler = spy();
+  // TODO: provide a builder API for TS so you don't have to do this `toString` hack
+  const reducer = laxHandleActions({
+    [MY_ACTION.toString()]: handler
+  }, {});
+
+  reducer({}, MY_ACTION(123), 'extra1', {extra: 2});
+
+  t.deepEqual(handler.firstCall.args, [{}, 123, 'extra1', {extra: 2}]);
 });
