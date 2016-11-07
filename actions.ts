@@ -13,6 +13,7 @@ type Handlers<S> = {[action: string]: Handler<S>};
 
 const ACTION_CREATOR = Symbol('ACTION_CREATOR');
 const DEFAULT_ACTION_NAME = 'ACTION';
+const FN_NAME_CONFIGURABLE = Object.getOwnPropertyDescriptor(() => {}, 'name').configurable;
 
 /*
  * Creates an action creator with the identity of the action creator as the type.
@@ -29,7 +30,7 @@ export function createAction(name = DEFAULT_ACTION_NAME): ActionCreator {
 
   const uniqueSymbol = Symbol(name);
 
-  if (name !== DEFAULT_ACTION_NAME) {
+  if (name !== DEFAULT_ACTION_NAME && FN_NAME_CONFIGURABLE) {
     Object.defineProperty(action, 'name', {value: name});
   }
 
