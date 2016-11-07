@@ -35,6 +35,11 @@ export function createAction(name = DEFAULT_ACTION_NAME): ActionCreator {
   }
 
   (<any>action).toString = () => uniqueSymbol;
+
+  // this valueOf hack is questionable. some polyfills depend on either
+  // valueOf or toString returning a simple primative. Since we're overriding
+  // toString (also admittedly questionable), we need toValue to return a string.
+  (<any>action).valueOf = () => name;
   action[ACTION_CREATOR] = true;
 
   return action;
