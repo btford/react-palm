@@ -1,0 +1,10 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/andrew-w-ross/typings-history/e707e86a79544dcefbe5632d4e80ccee5bb6f0e3/typings.json",
+    "raw": "registry:npm/history#2.0.0+20160607172317",
+    "main": "history.d.ts",
+    "name": "history",
+    "type": "typings"
+  }
+}
