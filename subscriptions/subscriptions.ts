@@ -4,7 +4,11 @@
 type SubType = any;
 type Action = {type: any, payload: any};
 type Dispatch = (action : Action) => void;
-type Subscription = {type: SubType, params: any, action: (...params: any[]) => Action};
+export type Subscription = {
+  type: SubType,
+  params: any,
+  action: (...params: any[]) => Action
+};
 
 const SUB_TYPE_TO_SCHEDULER = Symbol('SUB_TYPE_TO_SCHEDULER');
 
