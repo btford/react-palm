@@ -1,7 +1,6 @@
 /*
  * Interfaces
  */
-
 type SubType = any;
 type Action = {type: any, payload: any};
 type Dispatch = (action : Action) => void;
