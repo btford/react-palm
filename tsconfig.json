@@ -1,21 +1,16 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "target": "es5",
-        "jsx": "react",
-        "sourceMap": true
-    },
-    "filesGlob": [
-      "./typings/index.d.ts",
-      "./*.ts",
-      "./history/*.ts",
-      "./routing/*.ts",
-      "./subscriptions/*.ts",
-      "./tasks/*.ts",
-      "./test/*.ts",
-      "./example/**.ts",
-      "./example/**.tsx",
-      "./example/tasks/*.ts",
-      "./example/test/**/*.ts"
-    ]
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "jsx": "react",
+    "sourceMap": true,
+    "outDir": "dist"
+  },
+  "filesGlob": [
+    "./typings/index.d.ts",
+    "./src/**/*.ts",
+    "./test/*.ts",
+    "./example/**/*.ts",
+    "./example/**.tsx"
+  ]
 }

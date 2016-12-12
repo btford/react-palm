@@ -1,6 +1,7 @@
 import test from 'ava';
 import {spy, stub} from 'sinon';
-import {handleActions, laxHandleActions, createAction} from '../actions';
+
+import {handleActions, laxHandleActions, createAction} from '../src/actions';
 
 const MY_ACTION = createAction();
 

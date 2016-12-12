@@ -4,7 +4,7 @@ import {history} from './history';
 export const HISTORY_PUSH_TASK = (url: string): HistoryPushTask =>
   ({type: HISTORY_PUSH_TASK, url});
 
-type HistoryPushTask = {
+export type HistoryPushTask = {
   type: TaskType;
   url: string;
 }

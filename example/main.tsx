@@ -2,8 +2,8 @@ import * as React from 'react';
 import {render} from 'react-dom';
 import {createStore, applyMiddleware} from 'redux';
 import {connect, Provider} from 'react-redux';
+import {taskMiddleware} from '../src/tasks';
 
-import {taskMiddleware} from '../tasks';
 import {ListComponent, listReducer} from './list';
 
 const store = createStore(

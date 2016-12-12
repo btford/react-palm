@@ -1,7 +1,8 @@
 import test from 'ava';
 import {spy} from 'sinon';
 import {createStore, applyMiddleware} from 'redux';
-import {makeSubscriptionMiddleware, makeSubscriptionType} from '../subscriptions';
+
+import {makeSubscriptionMiddleware, makeSubscriptionType} from '../src/subscriptions';
 
 test('Middleware only calls schedulers when subscriptions change', (t) => {
   let fakeState = {};

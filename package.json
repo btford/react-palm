@@ -2,16 +2,13 @@
   "name": "react-palm",
   "version": "0.3.1",
   "description": "Elm-like architecture for React apps",
-  "main": "tasks.js",
-  "directories": {
-    "test": "test"
-  },
+  "main": "dist/src",
   "homepage": "https://github.com/btford/react-palm",
   "scripts": {
-    "build": "tsc",
-    "build-example": "npm run build && webpack example/main.js example/main.bundle.js",
+    "build": "rm -rf dist && tsc",
+    "build-example": "npm run build && webpack dist/example/main.js dist/example/main.bundle.js",
     "test": "npm run build && ava",
-    "watch": "node scripts/watch.js"
+    "watch": "node bin/watch.js"
   },
   "keywords": [
     "react",
@@ -26,12 +23,15 @@
     "url": "https://github.com/btford/react-palm.git"
   },
   "license": "MIT",
+  "dependencies": {
+    "history": "^4.4.1",
+    "react": "^15.3.1"
+  },
   "devDependencies": {
     "ava": "^0.15.2",
     "chalk": "^1.1.3",
     "enzyme": "^2.4.1",
     "jsdom": "^9.4.2",
-    "react": "^15.3.1",
     "react-addons-test-utils": "^15.3.1",
     "react-dom": "^15.3.1",
     "react-redux": "^4.4.5",
@@ -46,11 +46,11 @@
   },
   "ava": {
     "files": [
-      "test",
-      "example/test"
+      "dist/test",
+      "dist/example/test"
     ],
     "require": [
-      "./test/helpers/setup-browser-env.js"
+      "./bin/setup-browser-env.js"
     ]
   }
 }

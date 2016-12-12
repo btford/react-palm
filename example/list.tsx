@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {withTask} from '../tasks';
+import {withTask} from '../src/tasks';
+
 import {XHR_TASK} from './tasks/xhr';
 
 export const CHANGE_INPUT = (value : string) => ({type: CHANGE_INPUT, payload: {value}});

@@ -1,5 +1,5 @@
 import test from 'ava';
-import {drainTasksForTesting} from '../../../tasks';
+import {drainTasksForTesting} from '../../../src/tasks';
 
 import {XHR_TASK} from '../../tasks/xhr';
 import {listReducer, CHANGE_INPUT, ADD_ITEM, ADD_ITEM_EAGER} from '../../list';
