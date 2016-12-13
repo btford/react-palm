@@ -32,14 +32,14 @@ test('u should serialize and deserialize correctly params', t => {
 
 });
 
-test('The createRouter should manage root routes', t => {
+test('createRouter should generate urls', t => {
 
   const {routes} = createRouter(ROUTES);
   t.is(routes.user({uid: '123'}), '/users/123');
 
 });
 
-test('The createRouter should manage child routes', t => {
+test('createRouter should generate urls with child routes', t => {
 
   const {routes} = createRouter(ROUTES);
 
@@ -48,7 +48,7 @@ test('The createRouter should manage child routes', t => {
 
 })
 
-test('LOCATION_CHANGE should affect the reducer state accordingly', t => {
+test('router location change handler should update pathname and routes', t => {
 
   const {routes, handlers, INITIAL_STATE, LOCATION_CHANGE} = createRouter(ROUTES);
 
@@ -81,7 +81,7 @@ test('LOCATION_CHANGE should affect the reducer state accordingly', t => {
 
 });
 
-test('HISTORY_PUSH should affect the reducer and create a task', t => {
+test('history push action should update the pathname, routes and create a task', t => {
 
   const {routes, handlers, INITIAL_STATE, HISTORY_PUSH} = createRouter(ROUTES);
   const reducer = handleActions(handlers, INITIAL_STATE);
