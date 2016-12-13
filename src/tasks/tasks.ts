@@ -2,7 +2,7 @@
  * Interfaces
  */
 
-type TaskType = any;
+export type TaskType = any;
 
 export interface Task {
   type : TaskType;

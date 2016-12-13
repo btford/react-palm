@@ -7,7 +7,7 @@ import {
   withTask,
   makeTaskType,
   drainTasksForTesting
-} from '../tasks';
+} from '../src/tasks';
 
 // tasks
 const XHR_TASK = payload => ({type: XHR_TASK, payload});

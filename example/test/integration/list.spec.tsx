@@ -3,10 +3,10 @@ import * as React from 'react';
 import {mount} from 'enzyme';
 import {createStore} from 'redux';
 import {connect, Provider} from 'react-redux';
-import {ListComponent, listReducer} from '../../list';
-import {drainTasksForTesting} from '../../../tasks';
-import {makeForkUtil} from '../../../test-utils';
+import {drainTasksForTesting} from '../../../src/tasks';
+import {makeForkUtil} from '../../../src/test-utils';
 
+import {ListComponent, listReducer} from '../../list';
 import {XHR_TASK} from '../../tasks/xhr';
 
 test('Pessimistically adding an item', withFixtures(({t, wrapper, store, fork}) => {

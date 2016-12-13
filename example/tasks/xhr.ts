@@ -1,4 +1,4 @@
-import {Task, Action, makeTaskType} from '../../tasks';
+import {Task, Action, makeTaskType} from '../../src/tasks';
 
 /**
  * These type defs aren't needed, but they help provide documentation
