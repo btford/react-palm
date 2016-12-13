@@ -116,7 +116,7 @@ export const u = (strings, ...params) => ({
 // The following functions are adapted from react-router.
 
 /**
- * Recursively iteratoe over routes and their children in order to return
+ * Recursively iterate over routes and their children in order to return
  * matched components and associated params by deserializing them with the
  * current pathname.
  *

@@ -85,7 +85,28 @@ context of an api call for instance.
 
 #### Routing
 
-> Tot d'eau
+Here is an example router with two root routes and one child route for the user.
+
+```javascript
+import { u, createRouter } from 'react-palm'
+
+const { routes, handlers, INITIAL_STATE, LOCATION_CHANGE, HISTORY_PUSH } = createRouter({
+  home: { url: u`/`, component: Home },
+  user: { url: u`/users/${{uid: Number}}`, component: User, childRoutes: {
+    post: { url: u`/posts/${{pid: Number}}`, component: Post }
+  }}
+})
+```
+
+You should now be able to use the history api by dispatching the `HISTORY_PUSH`
+action with the pathname as payload.
+
+A Link path could be constructed like this.
+
+```javascript
+const path = routes.user({ uid: 4 }).post({ pid: 2 })
+console.log(path === '/users/4/posts/2') // true
+```
 
 #### Testing
 
@@ -105,12 +126,12 @@ import DELAY from './tasks/delay'
 test('The delay task should be valid', t => {
   const state = reducer(42, incrementWithDelay())
   const tasks = drainTasksForTesting()
-  
+
   t.is(state, 42)
   t.is(tasks.length, 1)
   t.is(tasks[0].type, DELAY)
   t.is(tasks[0].action.type, 'INCREMENT')
-  
+
   const newState = reducer(state, task.action)
   t.is(newState, 43)
 })
