@@ -90,10 +90,11 @@ Here is an example router with two root routes and one child route for the user.
 ```javascript
 import { u, createRouter } from 'react-palm'
 
-const { routes, handlers, INITIAL_STATE, LOCATION_CHANGE, HISTORY_PUSH } = createRouter({
+const { routes, handlers, INITIAL_STATE } = createRouter({
   home: { url: u`/`, component: Home },
   user: { url: u`/users/${{uid: Number}}`, component: User, childRoutes: {
-    post: { url: u`/posts/${{pid: Number}}`, component: Post }
+    post: { url: u`/posts/${{pid: Number}}`, component: Post },
+    chat: { url: u`/chat/${{cid: Number}}`, redirectTo: (routes, params) => routes.user(params) }
   }}
 })
 ```

@@ -24,7 +24,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "history": "^4.4.1",
     "react": "^15.3.1"
   },
   "devDependencies": {
