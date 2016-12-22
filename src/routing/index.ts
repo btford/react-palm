@@ -1,6 +1,6 @@
 import {withTask} from '../tasks';
 import {createAction} from '../actions';
-import {HISTORY_PUSH_TASK} from '../history';
+import {HISTORY_PUSH_TASK, REPLACE_TASK} from '../history';
 
 type ComponentType = Object | Function;
 
@@ -18,11 +18,26 @@ type RouteState = {
 }
 
 type RouterState = {
-  pathname: string,
-  routes: RouteState[]
+  path: string,
+  routes: RouteState[],
+  query: RouteParams,
+  hash: string
 }
 
 type RouterReducer = (state: RouterState) => RouterState
+
+const INITIAL_STATE = {
+  path: '',
+  query: {},
+  hash: '',
+  routes: []
+};
+
+const isString = s => typeof(s) === 'string' || s instanceof String;
+
+export const LOCATION_CHANGE = createAction('LOCATION_CHANGE');
+export const HISTORY_PUSH = createAction('HISTORY_PUSH');
+export const REPLACE = createAction('REPLACE');
 
 /**
  * Create the router that gets passed the routes object definition
@@ -35,24 +50,12 @@ type RouterReducer = (state: RouterState) => RouterState
  */
 export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => state) {
 
-  const LOCATION_CHANGE = createAction('LOCATION_CHANGE');
-  const HISTORY_PUSH = createAction('HISTORY_PUSH');
-
-  const INITIAL_STATE = {
-    pathname: '',
-    routes: []
-  };
-
   const handlers = {
-    [HISTORY_PUSH as any as string]: (state, pathname) =>
-      withTask(updateRoute(state, pathname), HISTORY_PUSH_TASK(pathname)),
-    [LOCATION_CHANGE as any as string]: (state, pathname) => updateRoute(state, pathname)
-  };
-
-  const updateRoute = (state, pathname) => {
-    const newRoutes = deepMatchRoutes(routes, pathname) || [];
-    const nextState = {...state, pathname, routes: newRoutes};
-    return onChange(nextState);
+    [HISTORY_PUSH as any as string]: (state, path) =>
+      withTask(updateRoute(state, path), HISTORY_PUSH_TASK(path)),
+    [REPLACE as any as string]: (state, path) =>
+      withTask(updateRoute(state, path), REPLACE_TASK(path)),
+    [LOCATION_CHANGE as any as string]: (state, path) => updateRoute(state, path)
   };
 
   const serialize = (route, parentUrl = '') => (...params) => {
@@ -60,14 +63,94 @@ export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => 
     if (!route.childRoutes) { return serializedRoute; }
 
     return Object.assign(
-      serializedRoute,
+      () => serializedRoute,
       mapKeys(route.childRoutes, route => serialize(route, serializedRoute))
     );
   }
 
   const serializedRoutes = mapKeys<T, Function>(routes, serialize);
 
-  return {handlers, routes: serializedRoutes, INITIAL_STATE, HISTORY_PUSH, LOCATION_CHANGE};
+  const updateRoute = (state, fullPath) => {
+    const [withoutHash, hash = ''] = fullPath.split('#');
+    const [path, queryString] = withoutHash.split('?');
+    const query = queryString
+      ? queryString.split('&').reduce((out, cur) => {
+        const [key, v] = cur.split('=');
+        const value = v ? decodeURIComponent(v.replace(/\+/g, ' ')) : '';
+        return {...out, [key]: value}
+      }, {})
+      : {};
+
+    const matched = deepMatchRoutes(routes, path);
+
+    // If it's a redirect string
+    if (isString(matched)) {
+      return updateRoute(state, matched);
+    }
+
+    const nextState = {
+      path,
+      hash,
+      query,
+      routes: matched || []
+    };
+
+    return onChange(nextState);
+  };
+
+  /**
+   * Recursively iterate over routes and their children in order to return
+   * matched components and associated params by deserializing them with the
+   * current path.
+   *
+   * deepMatchRoutes({user: {url: u`/users/${{uid: Number}}`, component: User}}, '/users/1', params)
+   * --> [{component: User, params: {uid: 1}}]
+   */
+  const deepMatchRoutes = (curRoutes, path, dadParams = {}) =>
+    Object.keys(curRoutes).reduce((out, key) => {
+
+      if (out) { return out; }
+
+      const route = curRoutes[key];
+      const {component, redirectTo, childRoutes, url} = route;
+
+      const maybeMatch = url.deserialize(path);
+      if (!maybeMatch) { return; }
+
+      const {params, remainingPath} = maybeMatch;
+
+      const fullParams = {...params, ...dadParams};
+      if (redirectTo) {
+        // TODO pass params
+        return isString(redirectTo) ? redirectTo : redirectTo(routes, fullParams);
+      }
+
+      // If the remaining path is empty, we can short-circuit
+      if (remainingPath.length === 0) {
+        return [{component, params}];
+      } else if (childRoutes) {
+
+        const childMaybeMatch = deepMatchRoutes(childRoutes, remainingPath, fullParams);
+
+        // Check redirect string
+        if (isString(childMaybeMatch)) {
+          return childMaybeMatch;
+        } else if (childMaybeMatch) {
+          return [{params, component}, ...childMaybeMatch];
+        }
+
+      }
+
+    }, null);
+
+  return {
+    handlers,
+    routes: serializedRoutes,
+    INITIAL_STATE,
+    HISTORY_PUSH,
+    LOCATION_CHANGE,
+    REPLACE
+  };
 }
 
 /**
@@ -114,38 +197,6 @@ export const u = (strings, ...params) => ({
 });
 
 // The following functions are adapted from react-router.
-
-/**
- * Recursively iterate over routes and their children in order to return
- * matched components and associated params by deserializing them with the
- * current pathname.
- *
- * deepMatchRoutes({user: {url: u`/users/${{uid: Number}}`, component: User}}, '/users/1')
- * --> [{component: User, params: {uid: 1}}]
- */
-const deepMatchRoutes = (routes, pathname) =>
-  Object.keys(routes).reduce((out, key) => {
-
-    if (out) { return out; }
-
-    const route = routes[key];
-    const {component, childRoutes, url} = route;
-
-    const maybeMatch = url.deserialize(pathname);
-    if (!maybeMatch) { return; }
-
-    const {params, remainingPathname} = maybeMatch;
-
-    if (childRoutes) {
-      const childMaybeMatch = deepMatchRoutes(childRoutes, remainingPathname);
-      if (childMaybeMatch) {
-        return [{params, component}, ...childMaybeMatch];
-      }
-    } else if (remainingPathname.length === 0) {
-      return [{component, params}];
-    }
-
-  }, null);
 
 const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -201,16 +252,16 @@ const compilePattern = (pattern: string) => {
 }
 
 /**
- * Match the pattern with a pathname
+ * Match the pattern with a path
  */
-const matchPattern = (pattern: string, pathname: string) => {
+const matchPattern = (pattern: string, path: string) => {
 
-  // Ensure pattern starts with leading slash for consistency with pathname.
+  // Ensure pattern starts with leading slash for consistency with path.
   if (pattern.charAt(0) !== '/') {
     pattern = `/${pattern}`;
   }
-  if (pathname.charAt(0) !== '/') {
-    pathname = `/${pathname}`;
+  if (path.charAt(0) !== '/') {
+    path= `/${path}`;
   }
 
   const compiled = compilePattern(pattern);
@@ -227,24 +278,24 @@ const matchPattern = (pattern: string, pathname: string) => {
     regexpSource += '$';
   }
 
-  const match = pathname.match(new RegExp(`^${regexpSource}`, 'i'));
+  const match = path.match(new RegExp(`^${regexpSource}`, 'i'));
   if (match === null) {
     return null;
   }
 
   const matchedPath = match[0];
-  let remainingPathname = pathname.substr(matchedPath.length);
+  let remainingPath = path.substr(matchedPath.length);
 
-  if (remainingPathname) {
+  if (remainingPath) {
     // Require that the match ends at a path separator, if we didn't match
-    // the full path, so any remaining pathname is a new path segment.
+    // the full path, so any remaining path is a new segment.
     if (matchedPath.charAt(matchedPath.length - 1) !== '/') {
       return null;
     }
 
-    // If there is a remaining pathname, treat the path separator as part of
-    // the remaining pathname for properly continuing the match.
-    remainingPathname = `/${remainingPathname}`;
+    // If there is a remaining path, treat the path separator as part of
+    // the remaining path for properly continuing the match.
+    remainingPath = `/${remainingPath}`;
   }
 
   const paramValues = match.slice(1).map(v => v && decodeURIComponent(v));
@@ -254,5 +305,5 @@ const matchPattern = (pattern: string, pathname: string) => {
     return reduced;
   }, {});
 
-  return {params, remainingPathname};
+  return {params, remainingPath};
 }

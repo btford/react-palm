@@ -1,18 +1,29 @@
 import {makeTaskType, TaskType} from '../tasks';
-import {history} from './history';
+import {getHistory} from '../bootstrap';
 
-export const HISTORY_PUSH_TASK = (url: string): HistoryPushTask =>
-  ({type: HISTORY_PUSH_TASK, url});
-
-export type HistoryPushTask = {
+export type LocationTask = {
   type: TaskType;
   url: string;
 }
 
-makeTaskType(HISTORY_PUSH_TASK, (tasks: HistoryPushTask[], dispatch) => {
-  // the last one wins
+export const HISTORY_PUSH_TASK = (url: string): LocationTask =>
+  ({type: HISTORY_PUSH_TASK, url});
+
+export const REPLACE_TASK = (url: string): LocationTask =>
+  ({type: REPLACE_TASK, url});
+
+// The last task should be prevalent over all the other ones.
+
+makeTaskType(HISTORY_PUSH_TASK, (tasks: LocationTask[], dispatch) => {
   if (tasks.length) {
     const {url} = tasks[tasks.length - 1];
-    history.push(url);
+    getHistory().push(url);
+  }
+});
+
+makeTaskType(REPLACE_TASK, (tasks: LocationTask[], dispatch) => {
+  if (tasks.length) {
+    const {url} = tasks[tasks.length - 1];
+    getHistory().replace(url);
   }
 });
