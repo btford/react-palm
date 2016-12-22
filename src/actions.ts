@@ -12,6 +12,7 @@ type Handler<S> = (state: S, payload: any, ...extra: any[]) => S;
 type Handlers<S> = {[action: string]: Handler<S>};
 
 const ACTION_CREATOR = Symbol('ACTION_CREATOR');
+const ACTION_MARKER = Symbol('ACTION_MARKER');
 const DEFAULT_ACTION_NAME = 'ACTION';
 const FN_NAME_CONFIGURABLE = Object.getOwnPropertyDescriptor(() => {}, 'name').configurable;
 
@@ -26,7 +27,7 @@ const FN_NAME_CONFIGURABLE = Object.getOwnPropertyDescriptor(() => {}, 'name').c
  * ```
  */
 export function createAction(name = DEFAULT_ACTION_NAME): ActionCreator {
-  const action = (payload = {}) => ({type: action, payload});
+  const action = (payload = {}) => ({type: action, payload, [ACTION_MARKER]: true});
 
   const uniqueSymbol = Symbol(name);
 
@@ -43,6 +44,10 @@ export function createAction(name = DEFAULT_ACTION_NAME): ActionCreator {
   action[ACTION_CREATOR] = true;
 
   return action;
+}
+
+export function isAction(maybeAction: any): boolean {
+  return Boolean(maybeAction[ACTION_MARKER]);
 }
 
 /*

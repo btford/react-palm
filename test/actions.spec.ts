@@ -1,7 +1,7 @@
 import test from 'ava';
 import {spy, stub} from 'sinon';
 
-import {handleActions, laxHandleActions, createAction} from '../src/actions';
+import {handleActions, laxHandleActions, createAction, isAction} from '../src/actions';
 
 const MY_ACTION = createAction();
 
@@ -121,4 +121,9 @@ test('laxHandleActions reducer passes extra params to handler', (t) => {
   reducer({}, MY_ACTION(123), 'extra1', {extra: 2});
 
   t.deepEqual(handler.firstCall.args, [{}, 123, 'extra1', {extra: 2}]);
+});
+
+test('isAction returns true only for actions from createAction', (t) => {
+  t.true(isAction(createAction('TEST')()));
+  t.false(isAction({type: 'NOPE', payload: 'uh-uh'}));
 });
