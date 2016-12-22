@@ -33,12 +33,13 @@ export const listReducer = (state : ListState = INITIAL_STATE, action): ListStat
   switch(action.type) {
 
   case CHANGE_INPUT:
-    return merge(state, {inputValue: action.payload.value});
+    return {...state, inputValue: action.payload.value};
 
   case ADD_ITEM:
-    return withTask(merge(state, {
+    return withTask({
+      ...state,
       isLoading: true
-    }), XHR_TASK({
+    }, XHR_TASK({
       payload: {
         url: '/api/add-item',
         json: {item}
@@ -47,24 +48,27 @@ export const listReducer = (state : ListState = INITIAL_STATE, action): ListStat
       error: ADD_ITEM_ERROR
     }));
   case ADD_ITEM_SUCCESS:
-    return merge(state, {
+    return {
+      ...state,
       items: state.items.concat([item]),
       error: '',
       isLoading: false
-    });
+    };
 
   case ADD_ITEM_ERROR:
-    return merge(state, {
+    return {
+      ...state,
       error: action.payload.error,
       isLoading: false
-    });
+    };
 
   // Here's the same example with eager updates and rollback
   case ADD_ITEM_EAGER:
-    return withTask(merge(state, {
+    return withTask({
+      ...state,
       items: state.items.concat([item]),
       isLoading: true
-    }), XHR_TASK({
+    }, XHR_TASK({
       payload: {
         url: '/api/add-item',
         json: {item}
@@ -73,26 +77,23 @@ export const listReducer = (state : ListState = INITIAL_STATE, action): ListStat
       error: (error) => ROLLBACK({previousState: state, error})
     }));
   case ADD_ITEM_EAGER_SUCCESS:
-    return merge(state, {
+    return {
+      ...state,
       error: '',
       isLoading: false
-    });
+    };
   case ROLLBACK:
-    return merge(action.payload.previousState, {
+    return {
+      ...action.payload.previousState,
       error: action.payload.error
-    });
+    };
 
   default:
     return state;
   }
 };
 
-
-function merge<T>(original : T, updated : Object): T {
-  return (Object as any).assign({}, original, updated);
-}
-
-export const ListComponent = ({items, error, inputValue, isLoading, dispatch}) => (
+export const ListComponent = ({items, error, inputValue, isLoading}) => (
   <div>
     <h1>List</h1>
     <p>error message: {error}</p>
