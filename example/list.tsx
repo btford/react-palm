@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from '../src/react';
 import {withTask} from '../src/tasks';
 
 import {XHR_TASK} from './tasks/xhr';
@@ -100,16 +100,16 @@ export const ListComponent = ({items, error, inputValue, isLoading, dispatch}) =
       <li key={index}>{item}</li>)}
     </ul>
     <input
-      onChange={(event) => dispatch(CHANGE_INPUT(event.target.value))}
+      onChange={(event) => CHANGE_INPUT(event.target.value)}
       value={inputValue} />
     <button
       id="add-item"
-      onClick={() => dispatch(ADD_ITEM())}
+      onClick={ADD_ITEM}
       disabled={isLoading}>
       Add item</button>
     <button
       id="add-item-eager"
-      onClick={() => dispatch(ADD_ITEM_EAGER())}
+      onClick={ADD_ITEM_EAGER}
       disabled={isLoading}>
       Add eager item</button>
   </div>

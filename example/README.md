@@ -11,5 +11,5 @@ the tests. Developing a testing strategy (what do I unit test? what do I integra
 more on your problem domain than on these techniques.
 
 This is example also shows a recommended file and directory layout.
-Components, state, and reducers are collocted in the same file.
+Components, state, and reducers are collocated in the same file.
 For larger apps, you could instead create a directory and a single file for each of these.

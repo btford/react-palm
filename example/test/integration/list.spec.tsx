@@ -1,5 +1,5 @@
 import test from 'ava';
-import * as React from 'react';
+import React, {withDispatch} from '../../../src/react';
 import {mount} from 'enzyme';
 import {createStore} from 'redux';
 import {connect, Provider} from 'react-redux';
@@ -76,7 +76,7 @@ function withFixtures(doSpec) {
 
   const wrapper = mount(
     <Provider store={store}>
-      <ConnectedApp />
+      {withDispatch(store.dispatch, <ConnectedApp />)}
     </Provider>
   );
 

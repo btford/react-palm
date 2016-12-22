@@ -1,5 +1,4 @@
-import * as React from 'react';
-import {render} from 'react-dom';
+import React, {render} from '../src/react';
 import {createStore, applyMiddleware} from 'redux';
 import {connect, Provider} from 'react-redux';
 import {taskMiddleware} from '../src/tasks';
@@ -20,5 +19,6 @@ render(
   <Provider store={store}>
     <ConnectedApp />
   </Provider>,
-  window.document.getElementById('app-container')
+  window.document.getElementById('app-container'),
+  action => store.dispatch(action)
 );
