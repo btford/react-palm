@@ -14,16 +14,10 @@ export const REPLACE_TASK = (url: string): LocationTask =>
 
 // The last task should be prevalent over all the other ones.
 
-makeTaskType(HISTORY_PUSH_TASK, (tasks: LocationTask[], dispatch) => {
-  if (tasks.length) {
-    const {url} = tasks[tasks.length - 1];
-    getHistory().push(url);
-  }
+makeTaskType(HISTORY_PUSH_TASK, (task: LocationTask) => {
+  getHistory().push(task.url);
 });
 
-makeTaskType(REPLACE_TASK, (tasks: LocationTask[], dispatch) => {
-  if (tasks.length) {
-    const {url} = tasks[tasks.length - 1];
-    getHistory().replace(url);
-  }
+makeTaskType(REPLACE_TASK, (task: LocationTask) => {
+  getHistory().replace(task.url);
 });
