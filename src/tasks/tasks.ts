@@ -4,11 +4,13 @@
 
 export type TaskType = any;
 
+type ActionCreator = (...args: any[]) => Action;
+
 export interface Task {
   type : TaskType;
   payload? : any;
-  success? : (...args: any[]) => Action;
-  error? : (...args: any[]) => Action;
+  success? : ActionCreator;
+  error? : ActionCreator;
 }
 
 export interface Action {
@@ -22,7 +24,7 @@ type Dispatch = (action: Action) => void;
 // A task handler takes a task of a specific type and does something with it
 // Most tasks will require you to write a handler, and then use `makeTaskScheduler`
 // to turn your handler into a scheduler.
-type TaskHandler = (tasks: Task[], dispatch: Dispatch) => void;
+type TaskHandler = (task: Task) => void | Promise<any>;
 
 /*
  * Implementation
@@ -63,32 +65,26 @@ export const taskMiddleware = store => next => action => {
   const dispatch = makeDispatchAsync(store.dispatch);
 
   if (tasks.length > 0) {
-
-    const taskHandlers = new Map() as Map<TaskHandler, Task[]>;
-
-    tasks.forEach(task => {
+    const taskResolutions = tasks.map(task => {
       const handler = task.type[TASK_TYPE_TO_HANDLER];
       if (typeof handler !== 'function') {
         const taskName = task.type.name ? `Function(${task.type.name})` : task.type;
         throw new Error(`Task of type "${taskName}" does not have a handler. ` +
                         `Make sure that you created it with "makeTaskType".`);
       }
-      if (!taskHandlers.get(handler)) {
-        taskHandlers.set(handler, [task]);
-      } else {
-        taskHandlers.get(handler).push(task);
-      }
+      return handler({
+        ...task,
+        error: (...args) => dispatch(task.error(...args)),
+        success: (...args) => dispatch(task.success(...args))
+      });
     });
-
-    const out = [];
-    taskHandlers.forEach((tasks, handler) => out.push(handler(tasks, dispatch)));
 
     tasks = [];
     lastWithTaskCall = null;
-    return Promise.all(out);
+    return Promise.all(taskResolutions);
   }
 
-  return Promise.resolve(null);
+  return CACHED_PROMISE;
 };
 
 /*
@@ -128,6 +124,84 @@ export function disableStackCapturing() {
   enableStackCapture = false;
 }
 
+/*
+ * map
+ */
+export function map({type, payload, success, error}: Task, transform: Function): Task {
+  return {
+    type,
+    payload,
+    success: (...args) => success(transform(...args)),
+    error
+  };
+}
+
+export function bimap(
+  {type, payload, success, error}: Task,
+  successTransform: Function,
+  errorTransform: Function
+) {
+  return {
+    type,
+    payload,
+    success: (...args) => success(successTransform(...args)),
+    error: (...args) => error(errorTransform(...args))
+  };
+}
+
+// This is kind of weird; handlers require that the task itself is
+// fed back in to the
+const compositeHandler = tasks => ({success, error}) => {
+  if (tasks.length === 0) {
+    return success([]);
+  }
+  let unsettled = tasks.length;
+  let failed = false;
+  const results = tasks.map(_ => null);
+  return Promise.all(tasks.map((task, index) => {
+    const handler = task.type[TASK_TYPE_TO_HANDLER];
+    return handler({
+      ...task,
+      success: (value) => {
+        if (failed) {
+          return;
+        }
+        results[index] = value;
+        unsettled -= 1;
+        if (unsettled === 0) {
+          success(results);
+        }
+      },
+      error: (reason) => {
+        if (!failed) {
+          failed = true;
+          error(reason);
+        }
+      }
+    });
+  }));
+};
+
+export function all(tasks: Task[], {success, error}): Task {
+  const type = {
+    get name() {
+      return 'Task.all(' + tasks.map(({type}) => toString(type)).join(', ') + ')';
+    },
+    [TASK_TYPE_TO_HANDLER]: compositeHandler(tasks)
+  };
+  return {
+    type,
+    success,
+    error,
+  };
+}
+
+export const Task = {
+  map,
+  bimap,
+  all
+};
+
 function trace(message : string) : Error {
   try {
     throw new Error(message);
@@ -135,4 +209,11 @@ function trace(message : string) : Error {
   catch(e) {
     return e;
   }
+}
+
+function toString(maybeString: any) {
+  if (typeof maybeString === 'function' && maybeString.name) {
+     return maybeString.name;
+  }
+  return maybeString.toString();
 }

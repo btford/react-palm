@@ -27,9 +27,8 @@ export interface XhrTaskOptions {
 export const XHR_TASK = ({payload, error, success}: XhrTaskOptions) =>
   ({type: XHR_TASK, payload, error, success});
 
-makeTaskType(XHR_TASK, (tasks: XhrTask[], dispatch) => {
-  tasks.forEach(task => setTimeout(() => {
-    const action = Math.random() > .3 ? task.success({}, 0) : task.error('Opps', 404);
-    dispatch(action);
-  }, 500));
+makeTaskType(XHR_TASK, (task: XhrTask) => {
+  setTimeout(() => {
+    Math.random() > .3 ? task.success({}, 0) : task.error('Opps', 404);
+  }, 500)
 });

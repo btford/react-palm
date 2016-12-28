@@ -50,13 +50,9 @@ import { makeTaskType } from 'react-palm'
 
 const DELAY = ({ action, time }) => ({ type: DELAY, action, time })
 
-makeTaskType(XHR, (tasks, dispatch) =>
-  Promise.all(
-    tasks.map(task =>
-      new Promise(resolve => setTimeout(resolve, task.time))
-        .then(() => dispatch(task.action))
-    )
-  )
+makeTaskType(XHR, ({time, success}) =>
+  (new Promise(resolve => setTimeout(resolve, task.time)))
+    .then(() => success())
 )
 ```
 
@@ -64,7 +60,7 @@ The usage of thus task in the reducer could be something like this.
 
 ```javascript
 import { withTask } from 'react-palm'
-import { handleActions, createAction } from 'redux-actions'
+import { handleActions, createAction } from 'react-palm/actions'
 
 import DELAY from './tasks/delay'
 
