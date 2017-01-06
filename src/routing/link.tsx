@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import {LOCATION_CHANGE} from '.';
+import {HISTORY_PUSH} from '.';
 
 type LinkProps = {
   to: string,
@@ -27,7 +27,7 @@ const Link: React.StatelessComponent<LinkProps> = ({
     if (e.defaultPrevented || target || !isLeft(e) || isMod(e)) { return; }
 
     e.preventDefault();
-    dispatch(LOCATION_CHANGE(to));
+    dispatch(HISTORY_PUSH(to));
   };
 
   return (
