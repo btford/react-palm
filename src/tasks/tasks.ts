@@ -55,7 +55,7 @@ export function makeTaskType(type: TaskType, handler: TaskHandler): TaskType {
  * Instead, use `drainTasksForTesting` to retrieve and make assertions about them.
  */
 export const taskMiddleware = store => next => action => {
-  if (tasks.length > 0) {
+  if (enableStackCapture && tasks.length > 0) {
     const err = lastWithTaskCall;
     lastWithTaskCall = null;
     throw err;
