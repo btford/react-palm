@@ -50,8 +50,8 @@ import { makeTaskType } from 'react-palm'
 
 const DELAY = ({ action, time }) => ({ type: DELAY, action, time })
 
-makeTaskType(XHR, ({time, success}) =>
-  new Promise(resolve => setTimeout(resolve, task.time))
+makeTaskType(DELAY, ({time, success}) =>
+  new Promise(resolve => setTimeout(resolve, time))
     .then(() => success())
 )
 ```
