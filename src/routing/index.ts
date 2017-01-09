@@ -35,6 +35,26 @@ const INITIAL_STATE = {
 
 const isString = s => typeof(s) === 'string' || s instanceof String;
 
+const deserializeQuery = query => {
+  if (!query) { return {}; }
+  return query.split('&').reduce((out, cur) => {
+    const [key, v] = cur.split('=');
+    const value = v ? decodeURIComponent(v.replace(/\+/g, ' ')) : '';
+    return {...out, [key]: value};
+  }, {});
+};
+
+const serializeQuery = query => {
+  const keys = Object.keys(query);
+  if (!keys.length) { return ''; }
+
+  const queryString = keys
+    .map(key => `${encodeURIComponent(key)}${query[key] ? `=${encodeURIComponent(query[key])}` : ''}`)
+    .join('&');
+
+  return `?${queryString}`;
+}
+
 export const LOCATION_CHANGE = createAction('LOCATION_CHANGE');
 export const HISTORY_PUSH = createAction('HISTORY_PUSH');
 export const REPLACE = createAction('REPLACE');
@@ -50,11 +70,15 @@ export const REPLACE = createAction('REPLACE');
  */
 export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => state) {
 
+  const historyHandler = task => (state, path) => {
+    const newState = updateRoute(state, path);
+    const newPath = `${newState.path}${serializeQuery(newState.query)}`;
+    return withTask(newState, task(newPath));
+  };
+
   const handlers = {
-    [HISTORY_PUSH as any as string]: (state, path) =>
-      withTask(updateRoute(state, path), HISTORY_PUSH_TASK(path)),
-    [REPLACE as any as string]: (state, path) =>
-      withTask(updateRoute(state, path), REPLACE_TASK(path)),
+    [HISTORY_PUSH as any as string]: historyHandler(HISTORY_PUSH_TASK),
+    [REPLACE as any as string]: historyHandler(REPLACE_TASK),
     [LOCATION_CHANGE as any as string]: (state, path) => updateRoute(state, path)
   };
 
@@ -73,13 +97,7 @@ export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => 
   const updateRoute = (state, fullPath) => {
     const [withoutHash, hash = ''] = fullPath.split('#');
     const [path, queryString] = withoutHash.split('?');
-    const query = queryString
-      ? queryString.split('&').reduce((out, cur) => {
-        const [key, v] = cur.split('=');
-        const value = v ? decodeURIComponent(v.replace(/\+/g, ' ')) : '';
-        return {...out, [key]: value}
-      }, {})
-      : {};
+    const query = deserializeQuery(queryString);
 
     const matched = deepMatchRoutes(routes, path);
 
