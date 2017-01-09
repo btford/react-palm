@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import {HISTORY_PUSH} from '.';
+import {HISTORY_PUSH} from './index';
 
 type LinkProps = {
   to: string,
