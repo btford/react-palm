@@ -26,6 +26,8 @@ type Dispatch = (action: Action) => void;
 // to turn your handler into a scheduler.
 type TaskHandler = (task: Task) => void | Promise<any>;
 
+declare var module:any;
+
 /*
  * Implementation
  */
@@ -55,7 +57,7 @@ export function makeTaskType(type: TaskType, handler: TaskHandler): TaskType {
  * Instead, use `drainTasksForTesting` to retrieve and make assertions about them.
  */
 export const taskMiddleware = store => next => action => {
-  if (enableStackCapture && tasks.length > 0) {
+  if (!module.hot && enableStackCapture && tasks.length > 0) {
     const err = lastWithTaskCall;
     lastWithTaskCall = null;
     throw err;
@@ -91,7 +93,7 @@ export const taskMiddleware = store => next => action => {
  * Use this function in your reducer to add tasks to an action handler.
  */
 export function withTask<T>(state : T, task: Task | Task[]): T {
-  if (enableStackCapture && !lastWithTaskCall) {
+  if (!module.hot && enableStackCapture && !lastWithTaskCall) {
     lastWithTaskCall = trace(IMPROPER_TASK_USAGE);
   }
   if (task instanceof Array) {
