@@ -140,8 +140,7 @@ export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => 
 
       const fullParams = {...params, ...dadParams};
       if (redirectTo) {
-        // TODO pass params
-        return isString(redirectTo) ? redirectTo : redirectTo(routes, fullParams);
+        return isString(redirectTo) ? redirectTo : redirectTo(serializedRoutes, fullParams);
       }
 
       // If the remaining path is empty, we can short-circuit
