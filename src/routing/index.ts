@@ -101,9 +101,10 @@ export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => 
 
     const matched = deepMatchRoutes(routes, path);
 
-    // If it's a redirect string
+    // If it's a redirect string, pass matched route part and rebuild full url
+    // with potential querystring and hash.
     if (isString(matched)) {
-      return updateRoute(state, matched);
+      return updateRoute(state, `${matched}${queryString ? `?${queryString}` : ''}${hash ? `#${hash}` : ''}`);
     }
 
     const nextState = {
