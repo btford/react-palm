@@ -40,6 +40,20 @@ const enhancers = [
 const store = createStore(reducer, initialState, compose(...enhancers))
 ```
 
+If you're using the redux-devtools extension, you might want to have readable actions types,
+since it doesn't handle `Symbol` objects pretty well by default.
+
+```javascript
+__REDUX_DEVTOOLS_EXTENSION__({
+  serializeAction: (key, value) => {
+    if (typeof value === 'function' && typeof value.toString() === 'symbol') {
+      return value.toString().toString()
+    }
+    return value
+  }
+})
+```
+
 ### Usage
 
 Here is a sample of what a delay task which triggers an action after a
