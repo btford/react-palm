@@ -45,11 +45,13 @@ since it doesn't handle `Symbol` objects pretty well by default.
 
 ```javascript
 __REDUX_DEVTOOLS_EXTENSION__({
-  serializeAction: (key, value) => {
-    if (typeof value === 'function' && typeof value.toString() === 'symbol') {
-      return value.toString().toString()
+  serialize: {
+    replacer: (key, value) => {
+      if (typeof value === 'function' && typeof value.toString() === 'symbol') {
+        return value.toString().toString()
+      }
+      return value
     }
-    return value
   }
 })
 ```
