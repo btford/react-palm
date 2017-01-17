@@ -7,6 +7,7 @@ import {
   withTask,
   makeTaskType,
   drainTasksForTesting,
+  resolveCompositeTaskForTesting,
   Task,
 } from '../src/tasks';
 
@@ -195,14 +196,11 @@ test.cb('Task.all works with an empty array', t => {
   });
 });
 
-
 test.cb('Task.map works', t => {
-  const MAP_TASK = Task.map({
-    ...ECHO_TASK(5),
-    success: SET_SYNC
-  }, (x) => x + 1);
+  const MAP_TASK =
+    Task.map(Task.map(ECHO_TASK(5), (x) => x + 1), SET_SYNC);
 
-  const reducer = (state = ['1', '2', '3'], action) => {
+  const reducer = (state = 0, action) => {
     return action.type === ADD ?
         withTask(state, MAP_TASK) :
       action.type === SET_SYNC ?
@@ -217,4 +215,72 @@ test.cb('Task.map works', t => {
     t.deepEqual(store.getState(), 6);
     t.end();
   });
+});
+
+test('Task.all + resolveCompositeTaskForTesting works to mock individual responses', t => {
+  const MULTI_TASK = Task.all([
+    ECHO_TASK('1'),
+    ECHO_TASK('2'),
+    ECHO_TASK('3')
+  ], {
+    success: SET_SYNC,
+    error: e => e
+  });
+
+  const reducer = (state = [], action) => {
+    return action.type === ADD ?
+        withTask(state, MULTI_TASK) :
+      action.type === SET_SYNC ?
+        action.payload :
+      state;
+  };
+
+  const store = createStore(reducer);
+
+  store.dispatch(ADD(1));
+
+  const [task] = drainTasksForTesting();
+
+  t.is(MULTI_TASK.type.name, 'Task.all(ECHO_TASK, ECHO_TASK, ECHO_TASK)');
+
+  const action = resolveCompositeTaskForTesting(task, (tasks) =>
+    tasks.forEach((t, i) => t.success(`response(${i}): ${t.payload}`)));
+
+  store.dispatch(action);
+
+  t.deepEqual(store.getState(), ['response(0): 1', 'response(1): 2', 'response(2): 3']);
+});
+
+test('Task.all + resolveCompositeTaskForTesting works with mapped tasks', t => {
+  const MULTI_TASK = Task.all([
+    Task.map(ECHO_TASK('1'), (value) => `${value} mapped!`),
+    ECHO_TASK('2'),
+    ECHO_TASK('3')
+  ], {
+    success: SET_SYNC,
+    error: e => e
+  });
+
+  const reducer = (state = [], action) => {
+    return action.type === ADD ?
+        withTask(state, MULTI_TASK) :
+      action.type === SET_SYNC ?
+        action.payload :
+      state;
+  };
+
+  const store = createStore(reducer);
+
+  store.dispatch(ADD(1));
+
+  const [task] = drainTasksForTesting();
+
+  t.is(MULTI_TASK.type.name, 'Task.all(ECHO_TASK, ECHO_TASK, ECHO_TASK)');
+
+  const action = resolveCompositeTaskForTesting(task, (tasks) =>
+    tasks.forEach((t, i) => t.success(`response(${i}): ${t.payload}`)));
+
+  store.dispatch(action);
+
+  t.deepEqual(store.getState(), ['response(0): 1 mapped!', 'response(1): 2', 'response(2): 3']);
 });

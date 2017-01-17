@@ -32,7 +32,11 @@ declare var module:any;
  * Implementation
  */
 const TASK_TYPE_TO_HANDLER = Symbol('TASK_TYPE_TO_HANDLER');
+const COMPOSITE_TASKS = Symbol('COMPOSITE_TASKS');
 const CACHED_PROMISE = Promise.resolve();
+function identity<X>(i : X) : X {
+  return i;
+}
 const makeDispatchAsync = dispatch => action => CACHED_PROMISE.then(() => dispatch(action));
 
 let tasks : Task[] = [];
@@ -129,25 +133,25 @@ export function disableStackCapturing() {
 /*
  * map
  */
-export function map({type, payload, success, error}: Task, transform: Function): Task {
+export function map({type, payload, success = identity, error}: Task, transform: Function): Task {
   return {
     type,
     payload,
-    success: (...args) => success(transform(...args)),
+    success: (arg) => transform(success(arg)),
     error
   };
 }
 
 export function bimap(
-  {type, payload, success, error}: Task,
+  {type, payload, success = identity, error = identity}: Task,
   successTransform: Function,
   errorTransform: Function
 ) {
   return {
     type,
     payload,
-    success: (...args) => success(successTransform(...args)),
-    error: (...args) => error(errorTransform(...args))
+    success: (arg) => successTransform(success(arg)),
+    error: (arg) => errorTransform(error(arg))
   };
 }
 
@@ -184,12 +188,55 @@ const compositeHandler = tasks => ({success, error}) => {
   }));
 };
 
+// TODO: move to an "intepretter" style so we don't have to duplicate all the logic above?
+export function resolveCompositeTaskForTesting(task: Task, fn: (tasks: Task[]) => void): Action {
+  if (!(COMPOSITE_TASKS in task.type)) {
+    throw new Error(`Expected a composite task (created with "Task.all"). Instead got task of type "${toString(task.type)}".`);
+  }
+  const tasks = task.type[COMPOSITE_TASKS];
+  if (tasks.length === 0) {
+    return task.success([]);
+  }
+  let unsettled = tasks.length;
+  let failed = false;
+  let reason = '';
+  const results = tasks.map(_ => null);
+
+  fn(tasks.map((task, index) => Task.bimap(task,
+    (value) => {
+      if (failed) {
+        return value;
+      }
+      if (results[index] !== null) {
+        throw new Error(`Expected "success" to be called only once per task.`);
+      }
+      results[index] = value;
+      unsettled -= 1;
+      return value;
+    },
+    (r) => {
+      if (!failed) {
+        failed = true;
+        reason = r;
+      }
+      return r;
+    }
+  )));
+
+  if (failed) {
+    return task.error(reason);
+  }
+
+  return task.success(results);
+}
+
 export function all(tasks: Task[], {success, error}): Task {
   const type = {
     get name() {
       return 'Task.all(' + tasks.map(({type}) => toString(type)).join(', ') + ')';
     },
-    [TASK_TYPE_TO_HANDLER]: compositeHandler(tasks)
+    [TASK_TYPE_TO_HANDLER]: compositeHandler(tasks),
+    [COMPOSITE_TASKS]: tasks
   };
   return {
     type,
