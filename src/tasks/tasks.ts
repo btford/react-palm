@@ -6,12 +6,20 @@ export type TaskType = any;
 
 type ActionCreator = (...args: any[]) => Action;
 
-export interface Task {
+export interface Task<P, T> {
   type : TaskType;
-  payload? : any;
-  success? : ActionCreator;
-  error? : ActionCreator;
+  payload? : P;
+
+  bimap: <R>(successTransform: Transformer<T, R>, errorTransform: Function) => Task<P, R>;
+
+  map: <R>(successTransform: Transformer<T, R>) => Task<P, R>;
 }
+
+type AnyTask = Task<any, any>;
+
+type Transformer<T, R> = (from: T) => R;
+
+type TaskPayload = any;
 
 export interface Action {
   type : any;
@@ -21,21 +29,27 @@ export interface Action {
 // Dispatch is the dispatch provided by the redux store API
 type Dispatch = (action: Action) => void;
 
-// A task handler takes a task of a specific type and does something with it
-// Most tasks will require you to write a handler, and then use `makeTaskScheduler`
-// to turn your handler into a scheduler.
-type TaskHandler = (task: Task) => void | Promise<any>;
+type TaskRun<P, T> = (
+  payload: P,
+  success?: (arg: T) => void,
+  error?: (reason) => void
+) => (Promise<T> | void);
+
+type TaskCreator<P, T> = (payload: P) => Task<P, T>;
 
 declare var module:any;
 
 /*
  * Implementation
  */
-const TASK_TYPE_TO_HANDLER = Symbol('TASK_TYPE_TO_HANDLER');
-const CACHED_PROMISE = Promise.resolve();
-const makeDispatchAsync = dispatch => action => CACHED_PROMISE.then(() => dispatch(action));
+const TASK_RUN = Symbol('TASK_RUN');
+const ANCESTOR_SUCCESS = Symbol('ANCESTOR_SUCCESS');
+const ANCESTOR_ERROR = Symbol('ANCESTOR_ERROR');
+function IDENTITY<T>(value: T) : T {
+  return value;
+}
 
-let tasks : Task[] = [];
+let tasks : Task<any, any>[] = [];
 
 // used for debugging
 let enableStackCapture = true;
@@ -43,12 +57,52 @@ let lastWithTaskCall : Error = null;
 const IMPROPER_TASK_USAGE = `Tasks should not be added outside of reducers.`;
 
 /*
- * Use this to create a new task type.
+ * Use this to create a new task
  */
-export function makeTaskType(type: TaskType, handler: TaskHandler): TaskType {
-  type[TASK_TYPE_TO_HANDLER] = handler;
-  return type;
+export function taskCreator<P, T>(
+  run: TaskRun<P, T>,
+  type: string
+) : TaskCreator<P, T> {
+  return (payload: P) => _task(payload, run, IDENTITY, IDENTITY, type)
 }
+
+function _task<P, T>(
+  payload: P,
+  run: TaskRun<P, T>,
+  mockSuccess,
+  mockError,
+  type
+): Task<P, T> {
+  return {
+    type,
+    payload,
+    [TASK_RUN]: run,
+    [ANCESTOR_SUCCESS]: mockSuccess,
+    [ANCESTOR_ERROR]: mockError,
+    map<R>(transform: Transformer<T, R>): Task<P, R> {
+      return this.bimap(transform);
+    },
+    bimap<R>(successTransform = IDENTITY, errorTransform = IDENTITY) {
+      return _task(
+        payload,
+        (payload, success, error) =>
+          run(
+            payload,
+            (result) =>
+              success(successTransform(result)),
+            reason =>
+              error(errorTransform(reason))
+          ),
+        (value) => successTransform(mockSuccess(value)),
+        (reason) => errorTransform(mockError(reason)),
+        type
+      );
+    }
+  };
+}
+
+const CACHED_PROMISE = Promise.resolve();
+const makeDispatchAsync = dispatch => action => CACHED_PROMISE.then(() => dispatch(action));
 
 /*
  * You need to install this middleware for tasks to have their handlers run.
@@ -68,17 +122,8 @@ export const taskMiddleware = store => next => action => {
 
   if (tasks.length > 0) {
     const taskResolutions = tasks.map(task => {
-      const handler = task.type[TASK_TYPE_TO_HANDLER];
-      if (typeof handler !== 'function') {
-        const taskName = task.type.name ? `Function(${task.type.name})` : task.type;
-        throw new Error(`Task of type "${taskName}" does not have a handler. ` +
-                        `Make sure that you created it with "makeTaskType".`);
-      }
-      return handler({
-        ...task,
-        error: (...args) => dispatch(task.error(...args)),
-        success: (...args) => dispatch(task.success(...args))
-      });
+      assertTaskIsRunnable(task);
+      return task[TASK_RUN](task.payload, dispatch, dispatch);
     });
 
     tasks = [];
@@ -92,16 +137,27 @@ export const taskMiddleware = store => next => action => {
 /*
  * Use this function in your reducer to add tasks to an action handler.
  */
-export function withTask<T>(state : T, task: Task | Task[]): T {
+export function withTask<S>(state : S, task: AnyTask | AnyTask[]): S {
   if (!module.hot && enableStackCapture && !lastWithTaskCall) {
     lastWithTaskCall = trace(IMPROPER_TASK_USAGE);
   }
   if (task instanceof Array) {
+    tasks.forEach(assertTaskIsRunnable);
     tasks = tasks.concat(task);
   } else {
+    assertTaskIsRunnable(task);
     tasks.push(task);
   }
   return state;
+}
+
+function assertTaskIsRunnable(task: AnyTask): void {
+  if (typeof task[TASK_RUN] !== 'function') {
+    const taskName = typeof task.type === 'function' ?
+      `Function(${toString(task.type)})` : toString(task.type);
+    throw new Error(`Task of type "${taskName}" does not have a handler. ` +
+                    `Make sure that you created it with "taskCreator".`);
+  }
 }
 
 /*
@@ -110,11 +166,23 @@ export function withTask<T>(state : T, task: Task | Task[]): T {
  * the list of tasks. If you want to display information about tasks in your component,
  * add that information to your state tree when you create the task.
  */
-export function drainTasksForTesting(): Task[] {
+export function drainTasksForTesting(): AnyTask[] {
   const drained = tasks;
   tasks = [];
   lastWithTaskCall = null;
   return drained;
+}
+
+/*
+ * This function will call `success` from the base task so that any
+ * calls to `map` will be called before returning.
+ */
+export function succeedTaskInTest<P, T>(someTask: Task<P, T>, value: P = null): T {
+  return someTask[ANCESTOR_SUCCESS](value);
+}
+
+export function errorTaskInTest(someTask, reason = '') {
+  return someTask[ANCESTOR_ERROR](reason);
 }
 
 /*
@@ -127,83 +195,81 @@ export function disableStackCapturing() {
 }
 
 /*
- * map
+ * Operators (map, bimap, all)
  */
-export function map({type, payload, success, error}: Task, transform: Function): Task {
-  return {
-    type,
-    payload,
-    success: (...args) => success(transform(...args)),
-    error
-  };
+
+// This abomination is because TypeScript does not have
+// higher kinded types.
+interface TaskExport {
+  all<TAll>(tasks: TAll[]): Task<any, TAll[]>;
+
+  all<P1, T1>(tasks: [Task<P1, T1>]): Task<any, [T1]>;
+
+  all<P1, T1, P2, T2>(
+    tasks: [Task<P1, T1>, Task<P2, T2>]
+  ): Task<any, [T1, T2]>;
+
+  all<P1, T1, P2, T2, P3, T3>(
+    tasks: [Task<P1, T1>, Task<P2, T2>, Task<P3, T3>]
+  ): Task<any, [T1, T2, T3]>;
+
+  map<P, T, R>(t: Task<P, T>, f: Transformer<T, R>): Task<P, R>;
+  bimap<P, T, R>(t: Task<P, T>, f: Transformer<T, R>, f2: Function): Task<P, R>;
 }
 
-export function bimap(
-  {type, payload, success, error}: Task,
-  successTransform: Function,
-  errorTransform: Function
-) {
-  return {
-    type,
-    payload,
-    success: (...args) => success(successTransform(...args)),
-    error: (...args) => error(errorTransform(...args))
-  };
-}
-
-// This is kind of weird; handlers require that the task itself is
-// fed back in to the
-const compositeHandler = tasks => ({success, error}) => {
-  if (tasks.length === 0) {
-    return success([]);
-  }
-  let unsettled = tasks.length;
-  let failed = false;
-  const results = tasks.map(_ => null);
-  return Promise.all(tasks.map((task, index) => {
-    const handler = task.type[TASK_TYPE_TO_HANDLER];
-    return handler({
-      ...task,
-      success: (value) => {
+const all = (tasks) => {
+  return _task(null, (_, success, error) => {
+    if (tasks.length === 0) {
+      return success([]);
+    }
+    const results = tasks.map(_ => null);
+    let remaining = tasks.length;
+    let failed = false;
+    return Promise.all(tasks.map((taskI, index) =>
+      taskI[TASK_RUN](
+        taskI.payload,
+        result => {
         if (failed) {
           return;
         }
-        results[index] = value;
-        unsettled -= 1;
-        if (unsettled === 0) {
+        remaining -= 1;
+        results[index] = result;
+        if (remaining === 0) {
           success(results);
         }
-      },
-      error: (reason) => {
-        if (!failed) {
-          failed = true;
-          error(reason);
+      }, reason => {
+        if (failed) {
+          return;
         }
-      }
-    });
-  }));
-};
-
-export function all(tasks: Task[], {success, error}): Task {
-  const type = {
-    get name() {
-      return 'Task.all(' + tasks.map(({type}) => toString(type)).join(', ') + ')';
+        failed = true;
+        error(reason);
+      })));
     },
-    [TASK_TYPE_TO_HANDLER]: compositeHandler(tasks)
-  };
-  return {
-    type,
-    success,
-    error,
-  };
-}
 
-export const Task = {
-  map,
-  bimap,
-  all
+    (values) =>
+      tasks.map((taskI, index) =>
+        succeedTaskInTest(taskI, values[index])),
+
+    (reasons) =>
+      tasks.map((taskI, index) =>
+        errorTaskInTest(taskI, reasons[index])),
+
+    'Task.all(' + tasks.map(({type}) =>
+      toString(type)).join(', ') + ')'
+  );
 };
 
+export const Task : TaskExport = {
+  all,
+  map: <P, T, R>(t: Task<P, T>, f: Transformer<T, R>) =>
+    t.map(f),
+  bimap: <P, T, R>(t: Task<P, T>, f: Transformer<T, R>, f2: Function) =>
+    t.bimap(f, f2)
+};
+
+/*
+ * Helpers
+ */
 function trace(message : string) : Error {
   try {
     throw new Error(message);
@@ -213,6 +279,8 @@ function trace(message : string) : Error {
   }
 }
 
+// Converts a function or toString-able to a human-readable string
+// for debugging.
 function toString(maybeString: any) {
   if (typeof maybeString === 'function' && maybeString.name) {
      return maybeString.name;

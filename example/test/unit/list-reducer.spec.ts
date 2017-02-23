@@ -1,5 +1,9 @@
 import test from 'ava';
-import {drainTasksForTesting} from '../../../src/tasks';
+import {
+  drainTasksForTesting,
+  succeedTaskInTest,
+  errorTaskInTest
+} from '../../../src/tasks';
 
 import {XHR_TASK} from '../../tasks/xhr';
 import {listReducer, CHANGE_INPUT, ADD_ITEM, ADD_ITEM_EAGER} from '../../list';
@@ -23,14 +27,14 @@ test('Eagerly adding an item', (t) => {
     url: '/api/add-item',
     json: {item: newItem}
   });
-  t.is(xhrTask.type, XHR_TASK);
+  t.is(xhrTask.type, 'XHR_TASK');
 
-  const successState = listReducer(addItemState, xhrTask.success());
+  const successState = listReducer(addItemState, succeedTaskInTest(xhrTask));
   t.false(successState.isLoading);
   t.is(successState.error, '');
 
   const errorMsg = 'It broke!';
-  const rollbackState = listReducer(addItemState, xhrTask.error(errorMsg));
+  const rollbackState = listReducer(addItemState, errorTaskInTest(xhrTask, errorMsg));
   t.false(rollbackState.isLoading);
   t.is(rollbackState.error, errorMsg);
   t.deepEqual(rollbackState.items, ['hi']);
@@ -55,15 +59,15 @@ test('Pessimistically adding an item', (t) => {
     url: '/api/add-item',
     json: {item: newItem}
   });
-  t.is(xhrTask.type, XHR_TASK);
+  t.is(xhrTask.type, 'XHR_TASK');
 
-  const successState = listReducer(addItemState, xhrTask.success());
+  const successState = listReducer(addItemState, succeedTaskInTest(xhrTask));
   t.false(successState.isLoading);
   t.is(successState.error, '');
   t.deepEqual(successState.items, ['hi', '123']);
 
   const errorMsg = 'It broke!';
-  const rollbackState = listReducer(addItemState, xhrTask.error(errorMsg));
+  const rollbackState = listReducer(addItemState, errorTaskInTest(xhrTask, errorMsg));
   t.false(rollbackState.isLoading);
   t.is(rollbackState.error, errorMsg);
   t.deepEqual(rollbackState.items, ['hi']);

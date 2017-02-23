@@ -4,7 +4,7 @@ import {createStore, applyMiddleware} from 'redux';
 import {createRouter, uHelper, u} from '../src/routing';
 import {handleActions} from '../src/actions';
 import {drainTasksForTesting} from '../src/tasks';
-import {HISTORY_PUSH_TASK, LocationTask} from '../src/history';
+import {HISTORY_PUSH_TASK} from '../src/history';
 
 const IndexComponent = Symbol('index');
 const PostComponent = Symbol('post');
@@ -90,11 +90,11 @@ test('history push action should update the path, routes and create a task', t =
   const indexUrl = '/';
   const index = reducer(INITIAL_STATE, HISTORY_PUSH(indexUrl));
 
-  const indexTasks = drainTasksForTesting() as LocationTask[];
+  const indexTasks = drainTasksForTesting();
 
   t.is(indexTasks.length, 1);
-  t.is(indexTasks[0].type, HISTORY_PUSH_TASK);
-  t.is(indexTasks[0].url, indexUrl);
+  t.is(indexTasks[0].type, 'HISTORY_PUSH_TASK');
+  t.is(indexTasks[0].payload.url, indexUrl);
 
   t.is(index.path, '/');
   t.deepEqual(index.routes, [{component: IndexComponent, params: {}}]);
@@ -102,11 +102,11 @@ test('history push action should update the path, routes and create a task', t =
   const paragraphUrl = '/users/1/25/paragraph/10/42';
   const paragraph = reducer(index, HISTORY_PUSH(paragraphUrl));
 
-  const paraTasks = drainTasksForTesting() as LocationTask[];
+  const paraTasks = drainTasksForTesting();
 
   t.is(paraTasks.length, 1);
-  t.is(paraTasks[0].type, HISTORY_PUSH_TASK);
-  t.is(paraTasks[0].url, paragraphUrl);
+  t.is(paraTasks[0].type, 'HISTORY_PUSH_TASK');
+  t.is(paraTasks[0].payload.url, paragraphUrl);
 
   t.deepEqual(paragraph.routes, [
     {component: PostComponent, params: {uid: '1', pid: '25'}},

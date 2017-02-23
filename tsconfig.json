@@ -9,7 +9,7 @@
   "filesGlob": [
     "./typings/index.d.ts",
     "./src/**/*.ts",
-    "./test/*.ts",
+    "./test/**/*.ts",
     "./example/**/*.ts",
     "./example/**.tsx"
   ]
