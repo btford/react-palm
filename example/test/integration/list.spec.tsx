@@ -3,7 +3,11 @@ import React, {withDispatch} from '../../../src/react';
 import {mount} from 'enzyme';
 import {createStore} from 'redux';
 import {connect, Provider} from 'react-redux';
-import {drainTasksForTesting} from '../../../src/tasks';
+import {
+  drainTasksForTesting,
+  succeedTaskInTest,
+  errorTaskInTest
+} from '../../../src/tasks';
 import {makeForkUtil} from '../../../src/test-utils';
 
 import {ListComponent, listReducer} from '../../list';
@@ -24,11 +28,11 @@ test('Pessimistically adding an item', withFixtures(({t, wrapper, store, fork}) 
   assertAddItemTask(t, xhrTask, newItem);
 
   fork(() => {
-    store.dispatch(xhrTask.success());
+    store.dispatch(succeedTaskInTest(xhrTask));
     t.deepEqual(listItems(wrapper), ['hi', newItem]);
   }, () => {
     const errMsg = 'Not works';
-    store.dispatch(xhrTask.error(errMsg));
+    store.dispatch(errorTaskInTest(xhrTask, errMsg));
     t.deepEqual(listItems(wrapper), ['hi']);
   });
 }));
@@ -49,11 +53,11 @@ test('Eagerly adding an item', withFixtures(({t, wrapper, store, fork}) => {
   assertAddItemTask(t, xhrTask, newItem);
 
   fork(() => {
-    store.dispatch(xhrTask.success());
+    store.dispatch(succeedTaskInTest(xhrTask));
     t.deepEqual(listItems(wrapper), ['hi', newItem]);
   }, () => {
     const errMsg = 'Not works';
-    store.dispatch(xhrTask.error(errMsg));
+    store.dispatch(errorTaskInTest(xhrTask, errMsg));
     t.deepEqual(listItems(wrapper), ['hi']);
   });
 }));
@@ -63,7 +67,7 @@ function assertAddItemTask(t, task, newItem) {
     url: '/api/add-item',
     json: {item: newItem}
   });
-  t.is(task.type, XHR_TASK);
+  t.is(task.type, 'XHR_TASK');
 }
 
 function withFixtures(doSpec) {

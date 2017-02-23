@@ -40,13 +40,10 @@ export const listReducer = (state : ListState = INITIAL_STATE, action): ListStat
       ...state,
       isLoading: true
     }, XHR_TASK({
-      payload: {
         url: '/api/add-item',
         json: {item}
-      },
-      success: ADD_ITEM_SUCCESS,
-      error: ADD_ITEM_ERROR
-    }));
+      }).bimap(ADD_ITEM_SUCCESS, ADD_ITEM_ERROR)
+    );
   case ADD_ITEM_SUCCESS:
     return {
       ...state,
@@ -69,13 +66,13 @@ export const listReducer = (state : ListState = INITIAL_STATE, action): ListStat
       items: state.items.concat([item]),
       isLoading: true
     }, XHR_TASK({
-      payload: {
         url: '/api/add-item',
         json: {item}
-      },
-      success: ADD_ITEM_EAGER_SUCCESS,
-      error: (error) => ROLLBACK({previousState: state, error})
-    }));
+      }).bimap(
+        ADD_ITEM_EAGER_SUCCESS,
+        (error) => ROLLBACK({previousState: state, error})
+      )
+    );
   case ADD_ITEM_EAGER_SUCCESS:
     return {
       ...state,

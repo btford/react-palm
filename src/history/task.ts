@@ -1,23 +1,16 @@
-import {makeTaskType, TaskType} from '../tasks';
+import {taskCreator, TaskType} from '../tasks';
 import {getHistory} from '../bootstrap';
 
-export type LocationTask = {
-  type: TaskType;
+export type LocationPayload = {
   url: string;
 }
 
-export const HISTORY_PUSH_TASK = (url: string): LocationTask =>
-  ({type: HISTORY_PUSH_TASK, url});
-
-export const REPLACE_TASK = (url: string): LocationTask =>
-  ({type: REPLACE_TASK, url});
-
 // The last task should be prevalent over all the other ones.
 
-makeTaskType(HISTORY_PUSH_TASK, (task: LocationTask) => {
-  getHistory().push(task.url);
-});
+export const HISTORY_PUSH_TASK = url => taskCreator(({url}: LocationPayload) => {
+  getHistory().push(url);
+}, 'HISTORY_PUSH_TASK')({url});
 
-makeTaskType(REPLACE_TASK, (task: LocationTask) => {
-  getHistory().replace(task.url);
-});
+export const REPLACE_TASK = url => taskCreator(({url}: LocationPayload) => {
+  getHistory().replace(url);
+}, 'REPLACE_TASK')({url});
