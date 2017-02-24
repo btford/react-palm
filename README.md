@@ -41,7 +41,7 @@ const store = createStore(reducer, initialState, compose(...enhancers))
 ```
 
 If you're using the redux-devtools extension, you might want to have readable actions types,
-since it doesn't handle `Symbol` objects pretty well by default.
+since it doesn't handle `Symbol` objects very well by default.
 
 ```javascript
 __REDUX_DEVTOOLS_EXTENSION__({
@@ -62,38 +62,40 @@ Here is a sample of what a delay task which triggers an action after a
 specified amount of time would look like.
 
 ```javascript
-import { makeTaskType } from 'react-palm'
+import { taskCreator } from 'react-palm'
 
-const DELAY = ({ action, time }) => ({ type: DELAY, action, time })
-
-makeTaskType(DELAY, ({time, success}) =>
+export const DELAY = taskCreator((time, success) =>
   new Promise(resolve => setTimeout(resolve, time))
-    .then(() => success())
-)
+    .then(() => success()), 'DELAY');
 ```
 
-The usage of thus task in the reducer could be something like this.
+You can use the task in your reducer like this:
 
 ```javascript
 import { withTask } from 'react-palm'
 import { handleActions, createAction } from 'react-palm/actions'
 
-import DELAY from './tasks/delay'
+import {DELAY} from './tasks/delay'
 
 export const incrementWithDelay = createAction('DELAY_INCREMENT')
 const increment = createAction('INCREMENT')
 
 handleActions({
-  INCREMENT: state => ++state,
-  DELAY_INCREMENT: state => withTask(state, DELAY(increment(), 1E3))
+  DELAY_INCREMENT: state =>
+    withTask(state, DELAY(1000).map(increment)),
+
+  INCREMENT: state => state + 1
 }, 0)
 ```
 
-With this implementation, dispatching `incrementWithDelay` will increase our
-counter state after exactly one second. Notice the first argument to `withTask`
-simply pass the `state` again, but you may want to use it to update your state
-before the task is executed, to change the loading status of your app in the
-context of an api call for instance.
+Dispatching `incrementWithDelay` will wait one second, then increment our counter state.
+
+The call to `.map` tells us to wrap the result of the task in an `INCREMENT` action.
+
+In the above example, we directly pass `state` as the first argument to `withTask`.
+Whatever you pass as the first argument will become the updated state, so you
+can update your state before the task is executed if you want. This might be useful
+to update a loading spinner, for instance.
 
 #### Routing
 
