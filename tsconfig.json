@@ -8,6 +8,7 @@
   },
   "filesGlob": [
     "./typings/index.d.ts",
+    "./src/*.ts",
     "./src/**/*.ts",
     "./test/**/*.ts",
     "./example/**/*.ts",
