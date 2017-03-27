@@ -13,11 +13,15 @@ export interface Task<P, T> {
   bimap: <R>(successTransform: Transformer<T, R>, errorTransform: Function) => Task<P, R>;
 
   map: <R>(successTransform: Transformer<T, R>) => Task<P, R>;
+
+  chain: <R, P2>(chainTransform: ChainTransformer<T, P2, R>) => Task<P, R>;
 }
 
 type AnyTask = Task<any, any>;
 
 type Transformer<T, R> = (from: T) => R;
+
+type ChainTransformer<T, R, P> = (from: T) => Task<P, R>;
 
 type TaskPayload = any;
 
@@ -97,6 +101,23 @@ function _task<P, T>(
         (reason) => errorTransform(mockError(reason)),
         type
       );
+    },
+
+    chain<P2, T2>(chainTransform: (result: T) => Task<P2, T2>): Task<P, T2> {
+      return _task(
+        payload,
+        (payload, success, error) =>
+          run(
+            payload,
+            (result) => {
+              const chainTask = chainTransform(result);
+              return chainTask[TASK_RUN](chainTask.payload, success, error);
+            }
+          ),
+        (value) => chainTransform(mockSuccess(value)),
+        mockError,
+        `Chain(${type})`
+      )
     }
   };
 }
@@ -215,6 +236,8 @@ interface TaskExport {
 
   map<P, T, R>(t: Task<P, T>, f: Transformer<T, R>): Task<P, R>;
   bimap<P, T, R>(t: Task<P, T>, f: Transformer<T, R>, f2: Function): Task<P, R>;
+
+  chain<P, T, P2, T2>(t: Task<P, T>, chainTransform: (result: T) => Task<P2, T2>): Task<P2, T2>;
 }
 
 const all = (tasks) => {
@@ -264,7 +287,8 @@ export const Task : TaskExport = {
   map: <P, T, R>(t: Task<P, T>, f: Transformer<T, R>) =>
     t.map(f),
   bimap: <P, T, R>(t: Task<P, T>, f: Transformer<T, R>, f2: Function) =>
-    t.bimap(f, f2)
+    t.bimap(f, f2),
+  chain: <P, T, P2, T2>(t: Task<P, T>, chainTransform: (result: T) => Task<P2, T2>) => t.chain(chainTransform)
 };
 
 /*

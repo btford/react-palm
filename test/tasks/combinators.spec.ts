@@ -112,3 +112,39 @@ test.cb('Task.map works in a real store', t => {
     t.end();
   });
 });
+
+test.cb('Task.chain works with a real store', t => {
+  const CHAIN_TASK = ECHO_TASK('Balthazar')
+    .chain(result => ECHO_TASK(`Hello ${result}`))
+    .map(SET_SYNC);
+
+  const reducer = (state = 0, action) => {
+    return action.type === ADD ?
+        withTask(state, CHAIN_TASK) :
+      action.type === SET_SYNC ?
+        action.payload :
+      state;
+  };
+
+  const store = taskStore(reducer);
+
+  // TODO: lol double cast
+  (store.dispatch(ADD(1)) as any as Promise<any>).then((_) => {
+    t.deepEqual(store.getState(), 'Hello Balthazar');
+    t.end();
+  });
+});
+
+test('Task.chain works with succeedTaskInTest', t => {
+  const task = ECHO_TASK('');
+  const chainTask = task.chain(who => ECHO_TASK(`Hello ${who}`));
+
+  t.is(chainTask.type, 'Chain(ECHO_TASK)');
+
+  const unchainedTask = succeedTaskInTest(chainTask, 'Balthazar') as any as Task<string, string>;
+
+  t.is(unchainedTask.type, 'ECHO_TASK');
+  t.is(unchainedTask.payload, 'Hello Balthazar');
+
+  t.is(succeedTaskInTest(unchainedTask, 'Result'), 'Result');
+});
