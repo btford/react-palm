@@ -171,4 +171,5 @@ This means that as your app grows, you won't have to rethink everything.
 Ideally, you should use Elm. This architecture is the closest thing to Elm I've managed to
 make within the constraints of JavaScript and React.
 
-[Choo](https://github.com/yoshuawuyts/choo) looks good too.
+- [Choo](https://github.com/yoshuawuyts/choo) looks good too.
+- [redux-loop](https://github.com/redux-loop/redux-loop) provides a more literal translation of commands and tasks from Elm to redux.
