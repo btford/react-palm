@@ -135,7 +135,7 @@ export const taskMiddleware = store => next => action => {
   if (!module.hot && enableStackCapture && tasks.length > 0) {
     const err = lastWithTaskCall;
     lastWithTaskCall = null;
-    throw err;
+    console.error(err);
   }
 
   next(action);
