@@ -12,7 +12,7 @@ type LinkProps = {
 }
 
 const isMod = e => !!(e.metaKey || e.altKey || e.ctrlKey || e.shiftKey);
-const isLeft = e => e.button === 1;
+const isLeft = e => e.button === 0;
 
 const Link: React.StatelessComponent<LinkProps> = ({
   children,

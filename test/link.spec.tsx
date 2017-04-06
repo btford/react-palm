@@ -34,9 +34,9 @@ test('Should test the click behavior', t => {
 
   const onClick = spy();
   const dispatch = spy();
-  const wrap = doWrap({onClick}, { dispatch });
+  const wrap = doWrap({onClick, to: '/home'}, { dispatch });
 
-  wrap.simulate('click', { button: 1 });
+  wrap.simulate('click', { button: 0 });
 
   t.truthy(onClick.calledOnce, 'The onClick handler should have been callled');
 
@@ -64,7 +64,7 @@ test('Default link behavior for external urls', t => {
     const onClick = spy();
     const wrap = doWrap({onClick, to: url}, {dispatch: f => f});
 
-    wrap.simulate('click', { button: 1 });
+    wrap.simulate('click', { button: 0 });
 
     const event = onClick.args[0][0];
     t.falsy(event.defaultPrevented, `The link should open ${url} with the default link behavior`);
