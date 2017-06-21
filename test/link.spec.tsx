@@ -3,11 +3,12 @@ import test from 'ava';
 import {mount} from 'enzyme';
 import {spy} from 'sinon';
 
-import Link from '../src/routing/link'
+import Link, {LinkProps} from '../src/routing/link'
 
 declare var global: any;
 
-const doWrap = (props = {}, context = {}) => mount(<Link {...props} />, {context});
+const doWrap = (props: LinkProps = {to: '#'}, context = {}) =>
+  mount(<Link {...props} />, {context});
 
 test('Should mount the Link component', t => {
 

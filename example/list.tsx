@@ -98,7 +98,7 @@ export const ListComponent = ({items, error, inputValue, isLoading}) => (
       <li key={index}>{item}</li>)}
     </ul>
     <input
-      onChange={(event) => CHANGE_INPUT(event.target.value)}
+      onChange={(event: any) => CHANGE_INPUT(event.target.value)}
       value={inputValue} />
     <button
       id="add-item"

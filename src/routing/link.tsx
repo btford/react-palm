@@ -2,9 +2,8 @@ import * as React from 'react';
 
 import {HISTORY_PUSH} from './index';
 
-type LinkProps = {
+export type LinkProps = {
   to: string,
-  push: Function,
   children?: any,
   target?: string,
   rel?: string,

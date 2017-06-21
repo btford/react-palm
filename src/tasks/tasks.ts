@@ -37,7 +37,7 @@ type TaskRun<P, T> = (
   payload: P,
   success?: (arg: T) => void,
   error?: (reason) => void
-) => (Promise<T> | void);
+) => (Promise<any> | any);
 
 type TaskCreator<P, T> = (payload: P) => Task<P, T>;
 
@@ -86,8 +86,8 @@ function _task<P, T>(
     map<R>(transform: Transformer<T, R>): Task<P, R> {
       return this.bimap(transform);
     },
-    bimap<R>(successTransform = IDENTITY, errorTransform = IDENTITY) {
-      return _task(
+    bimap<R>(successTransform: Transformer<T, R>, errorTransform) {
+      return _task<P, R>(
         payload,
         (payload, success, error) =>
           run(
@@ -103,13 +103,13 @@ function _task<P, T>(
       );
     },
 
-    chain<P2, T2>(chainTransform: (result: T) => Task<P2, T2>): Task<P, T2> {
+    chain<T2>(chainTransform: (result: T) => Task<T, T2>): Task<P, T2> {
       return _task(
         payload,
         (payload, success, error) =>
           run(
             payload,
-            (result) => {
+            (result: T) => {
               const chainTask = chainTransform(result);
               return chainTask[TASK_RUN](chainTask.payload, success, error);
             }
@@ -221,18 +221,23 @@ export function disableStackCapturing() {
 
 // This abomination is because TypeScript does not have
 // higher kinded types.
-interface TaskExport {
-  all<TAll>(tasks: TAll[]): Task<any, TAll[]>;
 
-  all<P1, T1>(tasks: [Task<P1, T1>]): Task<any, [T1]>;
+interface TaskExportAll {
+  <TAll>(tasks: TAll[]): Task<any, TAll[]>;
 
-  all<P1, T1, P2, T2>(
+  <P1, T1>(tasks: [Task<P1, T1>]): Task<any, [T1]>;
+
+  <P1, T1, P2, T2>(
     tasks: [Task<P1, T1>, Task<P2, T2>]
   ): Task<any, [T1, T2]>;
 
-  all<P1, T1, P2, T2, P3, T3>(
+  <P1, T1, P2, T2, P3, T3>(
     tasks: [Task<P1, T1>, Task<P2, T2>, Task<P3, T3>]
   ): Task<any, [T1, T2, T3]>;
+}
+
+interface TaskExport {
+  all: TaskExportAll;
 
   map<P, T, R>(t: Task<P, T>, f: Transformer<T, R>): Task<P, R>;
   bimap<P, T, R>(t: Task<P, T>, f: Transformer<T, R>, f2: Function): Task<P, R>;
@@ -283,7 +288,7 @@ const all = (tasks) => {
 };
 
 export const Task : TaskExport = {
-  all,
+  all: (all as any as TaskExportAll),
   map: <P, T, R>(t: Task<P, T>, f: Transformer<T, R>) =>
     t.map(f),
   bimap: <P, T, R>(t: Task<P, T>, f: Transformer<T, R>, f2: Function) =>

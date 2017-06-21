@@ -12,8 +12,8 @@ type Payload = string;
 
 function spy(
   payload: Payload,
-  success: (p: Payload) => Payload
-): Promise<Payload> {
+  success: (p: Payload) => void
+) {
   return Promise.resolve(success(payload));
 };
 

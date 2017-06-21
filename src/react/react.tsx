@@ -96,7 +96,7 @@ export function withDispatch(dispatch, childElement) {
  * composes over `fn` before calling dispatch
  */
 export function mapDispatch(fn: Function, childElement: ReactElement<any>) {
-  class MapDispatch extends Component<{children: ReactElement<any>}, any> {
+  class MapDispatch extends Component<any, any> {
     static childContextTypes = CONTEXT_WITH_DISPATCH
     static contextTypes = CONTEXT_WITH_DISPATCH;
 
