@@ -3,6 +3,7 @@ import {spy} from 'sinon';
 
 import {
   taskMiddleware,
+  liftTasks,
   withTask,
   taskCreator,
   drainTasksForTesting,
@@ -123,3 +124,29 @@ test.cb('Task middleware works with async task handler', withHelpers(({t, store}
     t.end();
   });
 }));
+
+test('liftTasks works', (t) => {
+  xhrHandlerSpy.reset();
+
+  const someReducer = (state, action) => {
+    return withTask({yo: 'hey'}, XHR_TASK(3));
+  }
+  const store = taskStore(function (state, action) {
+    if (action && action.type === ADD) {
+      const [tasks, store] = liftTasks(someReducer)(state, action);
+
+      t.is(drainTasksForTesting().length, 0);
+
+      return withTask(store, XHR_TASK(4));
+    }
+    return {};
+  });
+  store.dispatch(ADD(3));
+  const firstCallFirstArg = xhrHandlerSpy.args[0][0];
+  t.is(firstCallFirstArg, 4);
+  t.deepEqual(store.getState() as any, {yo: 'hey'});
+
+  // the middleware should consume all of the tasks
+  const tasks = drainTasksForTesting();
+  t.deepEqual(tasks, []);
+});

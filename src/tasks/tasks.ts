@@ -132,12 +132,7 @@ const makeDispatchAsync = dispatch => action => CACHED_PROMISE.then(() => dispat
  * Instead, use `drainTasksForTesting` to retrieve and make assertions about them.
  */
 export const taskMiddleware = store => next => action => {
-  if (!module.hot && enableStackCapture && tasks.length > 0) {
-    const err = lastWithTaskCall;
-    lastWithTaskCall = null;
-    throw err;
-  }
-
+  assertEmptyTaskQueue();
   next(action);
   const dispatch = makeDispatchAsync(store.dispatch);
 
@@ -155,11 +150,51 @@ export const taskMiddleware = store => next => action => {
   return CACHED_PROMISE;
 };
 
+function assertEmptyTaskQueue() {
+  if (!module.hot && enableStackCapture && tasks.length > 0) {
+    const err = lastWithTaskCall;
+    lastWithTaskCall = null;
+    throw err;
+  }
+}
+
+/*
+Example:
+
+// usage
+
+function newTopLevel(state, action) {
+  const [tasks, state] = liftTasks(topLevelReducer)(state, action);
+  return withTask(state, tasks.map(t =>
+    t.type === 'XHR_WITH_AUTH' ? t(state) : t
+  ));
+}
+
+const FANCY_WITH_GLOBALS = (payload) => {
+  function MY_XHR(auth) {
+    return XHR({...payload, auth});
+  }
+  MY_XHR.type = 'XHR_WITH_AUTH';
+  MY_XHR.payload = payload;
+
+  return MY_XHR;
+};
+*/
+export function liftTasks<T extends Function>(delegate: T) {
+  return function (...args) {
+    const parentQueue = tasks;
+    const myQueue: Task<any, any>[] = tasks = [];
+    const returnValue = delegate(...args);
+    tasks = parentQueue;
+    return [myQueue, returnValue];
+  }
+}
+
 /*
  * Use this function in your reducer to add tasks to an action handler.
  */
 export function withTask<S>(state : S, task: AnyTask | AnyTask[]): S {
-  if (!module.hot && enableStackCapture && !lastWithTaskCall) {
+  if (!lastWithTaskCall && !module.hot && enableStackCapture) {
     lastWithTaskCall = trace(IMPROPER_TASK_USAGE);
   }
   if (task instanceof Array) {
