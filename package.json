@@ -1,6 +1,6 @@
 {
   "name": "react-palm",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Elm-like architecture for React apps",
   "main": "dist/src",
   "homepage": "https://github.com/btford/react-palm",
@@ -57,5 +57,8 @@
     "require": [
       "./bin/setup-browser-env.js"
     ]
+  },
+  "dependencies": {
+    "prop-types": "^15.6.0"
   }
 }

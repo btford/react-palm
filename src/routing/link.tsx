@@ -1,4 +1,5 @@
 import * as React from 'react';
+import PropTypes from 'prop-types';
 
 import {HISTORY_PUSH} from './index';
 
@@ -45,6 +46,6 @@ const Link: React.StatelessComponent<LinkProps> = ({
 
 };
 
-Link.contextTypes = {dispatch: React.PropTypes.func};
+Link.contextTypes = {dispatch: PropTypes.func};
 
 export default Link;

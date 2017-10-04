@@ -1,6 +1,7 @@
 import * as RealReact from 'react';
+import PropTypes from 'prop-types';
 import {
-  Component, ReactElement, PropTypes, Children, createElement as realCreateElement
+  Component, ReactElement, Children, createElement as realCreateElement
 } from 'react';
 
 import {render as realRender} from 'react-dom';
