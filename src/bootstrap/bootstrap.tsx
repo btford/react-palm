@@ -11,7 +11,7 @@ export function makeStore({subscribe, reducer}) {
   return createStore(
     reducer,
     applyMiddleware(
-      taskMiddleware,
+      taskMiddleware as any,
       makeSubscriptionMiddleware(subscribe)
     )
   );

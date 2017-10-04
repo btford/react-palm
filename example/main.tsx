@@ -7,7 +7,7 @@ import {ListComponent, listReducer} from './list';
 
 const store = createStore(
   listReducer,
-  applyMiddleware(taskMiddleware)
+  applyMiddleware(taskMiddleware as any)
 );
 
 const ConnectedApp = connect(

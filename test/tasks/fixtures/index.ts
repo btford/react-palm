@@ -31,5 +31,5 @@ export const SET_SUCCESS = payload => ({type: SET_SUCCESS, payload});
 export const BAD = () => ({type: BAD, payload: {}});
 
 export function taskStore(reducer) {
-  return createStore(reducer, applyMiddleware(taskMiddleware));
+  return createStore(reducer, applyMiddleware(taskMiddleware as any));
 }
