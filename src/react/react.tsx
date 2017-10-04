@@ -1,5 +1,5 @@
 import * as RealReact from 'react';
-import PropTypes from 'prop-types';
+import * as PropTypes from 'prop-types';
 import {
   Component, ReactElement, Children, createElement as realCreateElement
 } from 'react';
