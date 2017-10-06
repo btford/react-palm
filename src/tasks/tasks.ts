@@ -75,10 +75,19 @@ function _task<P, T>(
   mockError,
   type
 ): Task<P, T> {
-  return {
+  const newTask = {
     type,
     payload,
-    [TASK_RUN]: run,
+    [TASK_RUN]: (payload: P, success, error) => {
+      reportEffects('start', newTask, newTask.payload);
+      return run(payload, (result) => {
+        reportEffects('success', newTask, result);
+        return success(result);
+      }, reason => {
+        reportEffects('error', newTask, reason);
+        return error(reason);
+      });
+    },
     [ANCESTOR_SUCCESS]: mockSuccess,
     [ANCESTOR_ERROR]: mockError,
     map<R>(transform: Transformer<T, R>): Task<P, R> {
@@ -118,6 +127,8 @@ function _task<P, T>(
       )
     }
   };
+
+  return newTask;
 }
 
 const CACHED_PROMISE = Promise.resolve();
@@ -211,6 +222,15 @@ export function errorTaskInTest(someTask, reason = '') {
  */
 export function disableStackCapturing() {
   enableStackCapture = false;
+}
+
+/*
+ * Record the inputs/outputs of all tasks, possibly for
+ * generating tests.
+ */
+let reportEffects = (event: string, task: AnyTask, payload: any) => {};
+export function reportTasksForTesting(fn) {
+  reportEffects = fn;
 }
 
 /*
