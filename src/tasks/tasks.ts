@@ -65,7 +65,19 @@ export function taskCreator<P, T>(
   run: TaskRun<P, T>,
   type: string
 ) : TaskCreator<P, T> {
-  return (payload: P) => _task(payload, run, IDENTITY, IDENTITY, type)
+  return (payload: P) => {
+    const newTask = _task<P, T>(payload, (payload: P, success, error) => {
+      reportEffects('start', newTask, newTask.payload);
+      return run(payload, (result: T) => {
+        reportEffects('success', newTask, result);
+        return success(result);
+      }, reason => {
+        reportEffects('error', newTask, reason);
+        return error(reason);
+      });
+    }, IDENTITY, IDENTITY, type);
+    return newTask;
+  };
 }
 
 function _task<P, T>(
@@ -78,16 +90,7 @@ function _task<P, T>(
   const newTask = {
     type,
     payload,
-    [TASK_RUN]: (payload: P, success, error) => {
-      reportEffects('start', newTask, newTask.payload);
-      return run(payload, (result) => {
-        reportEffects('success', newTask, result);
-        return success(result);
-      }, reason => {
-        reportEffects('error', newTask, reason);
-        return error(reason);
-      });
-    },
+    [TASK_RUN]: run,
     [ANCESTOR_SUCCESS]: mockSuccess,
     [ANCESTOR_ERROR]: mockError,
     map<R>(transform: Transformer<T, R>): Task<P, R> {
