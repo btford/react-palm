@@ -2,6 +2,8 @@
 // Source: https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/95e782233e8e203a0b9283c3a7031faee428a530/core-js/core-js.d.ts
 declare type PropertyKey = string | number | symbol;
 
+declare var require: any;
+
 // #############################################################################################
 // ECMAScript 6: Object & Function
 // Modules: es6.object.assign, es6.object.is, es6.object.set-prototype-of,
@@ -782,7 +784,7 @@ interface PromiseConstructor {
     all<T1, T2, T3>(values: [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>, T3 | PromiseLike<T3>]): Promise<[T1, T2, T3]>;
     all<T1, T2>(values: [T1 | PromiseLike<T1>, T2 | PromiseLike<T2>]): Promise<[T1, T2]>;
     all<TAll>(values: Iterable<TAll | PromiseLike<TAll>>): Promise<TAll[]>;
-    
+
     /**
      * Creates a Promise that is resolved or rejected when any of the provided Promises are resolved
      * or rejected.

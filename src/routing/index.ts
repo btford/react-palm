@@ -5,8 +5,14 @@ import {HISTORY_PUSH_TASK, REPLACE_TASK} from '../history';
 type ComponentType = Object | Function;
 
 type RouteDefinition = {
-  [routeName: string]: {url: any, component: ComponentType, childRoutes?: RouteDefinition }
+  [routeName: string]: SingleRoute
 }
+
+type ComponentRoute = {url: any, component: ComponentType, childRoutes?: RouteDefinition};
+
+type RedirectRoute = {url: any, redirectTo: Function | string};
+
+type SingleRoute = ComponentRoute | RedirectRoute;
 
 type RouteParams = {
   [paramName: string]: string
@@ -55,9 +61,26 @@ const serializeQuery = query => {
   return `?${queryString}`;
 }
 
+const validateRouteDefinition = (routeDefinition: RouteDefinition) => {
+  mapKeys(routeDefinition, (route, routeName) => {
+    validateRoute(route, routeName);
+    if (isComponentRoute(route) && route.childRoutes) {
+      validateRouteDefinition(route.childRoutes);
+    }
+  });
+}
+
+const isComponentRoute = (route: SingleRoute): route is ComponentRoute => {
+  return Boolean((route as any).component);
+}
+
+const validateRoute = (routeDef: SingleRoute, routeName: string) => {
+}
+
 export const LOCATION_CHANGE = createAction('LOCATION_CHANGE');
 export const HISTORY_PUSH = createAction('HISTORY_PUSH');
 export const REPLACE = createAction('REPLACE');
+export const INIT_CLIENT = createAction('INIT_CLIENT');
 
 /**
  * Create the router that gets passed the routes object definition
@@ -68,7 +91,9 @@ export const REPLACE = createAction('REPLACE');
  * createRouter({ home: '/' })
  * --> { handlers, routes, INITIAL_STATE, HISTORY_PUSH, LOCATION_CHANGE }
  */
-export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => state) {
+export function createRouter<T extends RouteDefinition>(routes: T, onChange: RouterReducer = (state) => state) {
+
+  validateRouteDefinition(routes);
 
   const historyHandler = task => (state, path) => {
     const newState = updateRoute(state, path);
@@ -79,7 +104,11 @@ export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => 
   const handlers = {
     [HISTORY_PUSH as any as string]: historyHandler(HISTORY_PUSH_TASK),
     [REPLACE as any as string]: historyHandler(REPLACE_TASK),
-    [LOCATION_CHANGE as any as string]: (state, path) => updateRoute(state, path)
+    [LOCATION_CHANGE as any as string]: (state, path) => updateRoute(state, path),
+    [INIT_CLIENT as any as string]: (state, path) => {
+      //TODO(btford): correctly decompose URL into path, hash, qs
+      return {...state, routes: deepMatchRoutes(routes, path)}
+    }
   };
 
   const serialize = (route, parentUrl = '') => (...params) => {
@@ -97,6 +126,10 @@ export function createRouter<T>(routes: T, onChange: RouterReducer = (state) => 
   const updateRoute = (state, fullPath) => {
     const [withoutHash, hash = ''] = fullPath.split('#');
     const [path, queryString] = withoutHash.split('?');
+    //TODO(btford): handle qs, hash, etc.
+    if (path === state.path) {
+      return state;
+    }
     const query = deserializeQuery(queryString);
 
     const matched = deepMatchRoutes(routes, path);
