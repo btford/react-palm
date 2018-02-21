@@ -13,9 +13,10 @@
 <h1 align="center">react-palm</h1>
 <h5 align="center">A cohesive strategy for managing state, handling side effects, and testing React Apps.</h5>
 
-<p align="center">:warning: This is very work in progress, please don't bother me about it, thanks. :warning:</p>
+<p align="center">:warning: This is work in progress, please don't bother me about it, thanks. :warning:</p>
 
-    npm install react-palm -S
+    yarn add react-palm
+
 
 ### Setup
 
@@ -40,21 +41,6 @@ const enhancers = [
 const store = createStore(reducer, initialState, compose(...enhancers))
 ```
 
-If you're using the redux-devtools extension, you might want to have readable actions types,
-since it doesn't handle `Symbol` objects very well by default.
-
-```javascript
-__REDUX_DEVTOOLS_EXTENSION__({
-  serialize: {
-    replacer: (key, value) => {
-      if (typeof value === 'function' && typeof value.toString() === 'symbol') {
-        return value.toString().toString()
-      }
-      return value
-    }
-  }
-})
-```
 
 ### Usage
 
@@ -97,40 +83,13 @@ Whatever you pass as the first argument will become the updated state, so you
 can update your state before the task is executed if you want. This might be useful
 to update a loading spinner, for instance.
 
-#### Routing
-
-Here is an example router with two root routes and one child route for the user.
-
-```javascript
-import { u, createRouter } from 'react-palm'
-
-const { routes, handlers, INITIAL_STATE } = createRouter({
-  home: { url: u`/`, component: Home },
-  user: { url: u`/users/${{uid: Number}}`, component: User, childRoutes: {
-    post: { url: u`/posts/${{pid: Number}}`, component: Post },
-    chat: { url: u`/chat/${{cid: Number}}`, redirectTo: (routes, params) => routes.user(params) }
-  }}
-})
-```
-
-You should now be able to use the history api by dispatching the `HISTORY_PUSH`
-action with the pathname as payload.
-
-A Link path could be constructed like this.
-
-```javascript
-const path = routes.user({ uid: 4 }).post({ pid: 2 })
-console.log(path === '/users/4/posts/2') // true
-```
-
 #### Testing
 
-`react-palm` has been designed with testing in mind. Since you probably don't want
-to create api calls in a testing environment, we provide a `drainTasksForTesting`
+We designed `react-palm` with testing in mind. Since you probably don't want
+to create API calls in a testing environment, we provide a `drainTasksForTesting`
 utility that will remove all the tasks from the queue and return them.
 
-You can now assert over these to make sure they are of the good type and using a
-valid payload.
+You can now assert that they have the expected type and payload.
 
 ```javascript
 import { drainTasksForTesting } from 'react-palm'
@@ -159,7 +118,7 @@ use-case.
 
 ##### Strategy? Framework? Library?
 
-It's very unlikely that you'll create a cohesive architecture if you piecemeal add requirements to
+It's unlikely that you'll create a cohesive architecture if you piecemeal add requirements to
 an existing design.
 
 `react-palm` takes a "subtractive" approach; we start with a full set of concerns and make sure
@@ -168,8 +127,12 @@ This means that as your app grows, you won't have to rethink everything.
 
 ##### Should I use this?
 
-Ideally, you should use Elm. This architecture is the closest thing to Elm I've managed to
-make within the constraints of JavaScript and React.
+Ideally, you should use Elm or PureScript. This architecture is the closest thing to Elm I've managed to
+make within the constraints of JavaScript, React, and Redux. I created it as a stop-gap for
+specific applications that I work on. It contains trade-offs that may not be generally useful.
 
-- [Choo](https://github.com/yoshuawuyts/choo) looks good too.
-- [redux-loop](https://github.com/redux-loop/redux-loop) provides a more literal translation of commands and tasks from Elm to redux.
+- [Elm](http://elm-lang.org), a friendly, functional, compile-to-JS language.
+  - [The Elm Architecture (TEA)](https://guide.elm-lang.org/architecture/)
+- [PureScript](http://www.purescript.org/), a feature-rich, functional compile-to-JS language.
+- [Choo](https://github.com/yoshuawuyts/choo), a small, Elm-like framework for JavaScript.
+- [redux-loop](https://github.com/redux-loop/redux-loop) a library that provides a very literal translation of commands and tasks from Elm to Redux.

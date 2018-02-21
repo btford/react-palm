@@ -1,1 +1,2 @@
-module.exports = require('./dist/src/tasks');
+// @flow
+module.exports = require('./dist/tasks');
