@@ -1,11 +1,9 @@
 [ignore]
 .*/coverage/*
-.*/dist/*
 .*/node_modules/*
 
 [include]
 
 [libs]
-index.js.flow
 
 [options]

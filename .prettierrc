@@ -1,0 +1,5 @@
+{
+  "parser": "flow",
+  "bracketSpacing": false,
+  "singleQuote": true
+}
