@@ -287,7 +287,7 @@ const makeDispatchAsync = (dispatch: Function) => (action: Object) =>
 export const taskMiddleware = (store: {dispatch: Function}) => (
   next: Function
 ) => (action: Object) => {
-  if (!module.hot && enableStackCapture && globalTaskQueue.length > 0) {
+  if (!(module: any).hot && enableStackCapture && globalTaskQueue.length > 0) {
     const err = lastWithTaskCall;
     lastWithTaskCall = null;
     throw err;
@@ -329,7 +329,7 @@ function runTaskActual(task, success, error) {
  * The task will be lifted up to the top of your app.
  */
 export function withTasks<State>(state: State, tasks: AnyTasks): State {
-  if (!module.hot && enableStackCapture && !lastWithTaskCall) {
+  if (!(module: any).hot && enableStackCapture && !lastWithTaskCall) {
     lastWithTaskCall = trace(IMPROPER_TASK_USAGE);
   }
   if (tasks instanceof Array) {
