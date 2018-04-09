@@ -1,16 +1,21 @@
 {
   "name": "react-palm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Elm-like architecture for React apps",
   "main": "dist/src",
   "homepage": "https://github.com/btford/react-palm",
   "scripts": {
-    "build":
-      "rm -rf dist && babel src --out-dir dist && flow-copy-source -v src/ dist",
+    "build": "rm -rf dist && babel src --out-dir dist && flow-copy-source -v src/ dist",
     "test": "jest",
     "precommit": "pretty-quick --staged"
   },
-  "keywords": ["react", "redux", "elm", "tasks", "side-effects"],
+  "keywords": [
+    "react",
+    "redux",
+    "elm",
+    "tasks",
+    "side-effects"
+  ],
   "author": "Brian Ford <btford@umich.edu>",
   "repository": {
     "type": "git",
