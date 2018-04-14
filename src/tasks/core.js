@@ -1,11 +1,7 @@
 // @flow
 
-/*
- * Interfaces
- */
-
 // A task that either returns, or errors
-opaque type Task<
+export opaque type Task<
   +Arg,
   +Inbound,
   +InboundError = mixed,
@@ -13,7 +9,7 @@ opaque type Task<
   +Error = InboundError
 >: $ReadOnly<{
   // This declaration is the public API
-  kind: 'regular',
+
   type: string,
   payload: Arg,
 
@@ -30,7 +26,8 @@ opaque type Task<
     chainTransform: (Result) => Task<*, *, *, ResultPrime, ErrorPrime>
   ): Task<Arg, Inbound, InboundError, ResultPrime, Error | ErrorPrime>
 }> = $ReadOnly<{
-  // `kind` is private
+  // This declaration is the private API.
+
   kind: 'regular',
   type: string,
   payload: Arg,
@@ -41,12 +38,8 @@ opaque type Task<
    * we can substitute applying effectful functions for mocking results
    * in test.
    */
-  run<S, E>(
-    (
-      ((S) => mixed, (E) => mixed) => mixed,
-      (S) => mixed,
-      (E) => mixed
-    ) => mixed,
+  run(
+    BiApplicative<Inbound, InboundError>,
     (Result) => mixed,
     (Error) => mixed
   ): mixed,
@@ -65,6 +58,36 @@ opaque type Task<
   ): Task<Arg, Inbound, InboundError, ResultPrime, Error | ErrorPrime>
 }>;
 
+// A function that does some side-effect when run.
+export type Effector<Inbound, InboundError> = (
+  (Inbound) => mixed,
+  (InboundError) => mixed
+) => mixed;
+
+// A function that runs an effector for some environment.
+// In test, we provide one that doesn't call the effectful
+// function, instead providing a mock response.
+export type BiApplicative<S, E> = (
+  Effector<S, E>,
+  (S) => mixed,
+  (E) => mixed
+) => mixed;
+
+// Private API for running a task. Do not use this directly.
+// We need this because Task is an opaque type, and we
+// hide `.run` outside this file.
+export function _run<Inbound, InboundError, Result, ErrorT>(
+  task: Task<*, Inbound, InboundError, Result, ErrorT>,
+  fnApplication: BiApplicative<Inbound, InboundError>,
+  success: Result => mixed,
+  error: ErrorT => mixed
+): mixed {
+  return task.run(fnApplication, success, error);
+}
+
+/*
+ * A function that takes some Arg and returns a new task.
+ */
 export type TaskCreator<
   Arg,
   Inbound,
@@ -73,22 +96,28 @@ export type TaskCreator<
   Error = InboundError
 > = Arg => Task<Arg, Inbound, InboundError>;
 
-export type AnyTask = Task<any, any, any>;
-
 /**
  * A group of tasks, all of different types
  */
+export type AnyTask = Task<any, any, any>;
 export type AnyTasks = $ReadOnlyArray<AnyTask>;
 
-// For tasks whose type must be disambiguated from their use
-// (because they were dynamically hoisted using `withTask`, for instance).
+/**
+ * Tasks whose type must be disambiguated from their use
+ * (because they were dynamically hoisted using `withTask`, for instance).
+ */
 export type MixedTask = Task<mixed, mixed>;
 export type MixedTasks = $ReadOnlyArray<MixedTask>;
 
 type Callback<Error, Result> = (err?: Error, res: Result) => mixed;
 
 /**
+ * ## `Task.fromCallback`
  * Returns a task-creator from a function that returns a promise.
+ *
+ * `arg => Promise<string[]>` -> `arg => Task<string[]>`.
+ *
+ * Uses the second arg as a label for debugging.
  */
 export function fromPromise<Arg, +Inbound>(
   fn: Arg => Promise<Inbound>,
@@ -124,44 +153,20 @@ export function fromCallback<Arg, +Inbound, +ErrorT>(
     );
 }
 
-// legacy API
-// You probably want to use `Task.fromCallback` or
-// `Task.fromPromise` instead.
-export function taskCreator<Arg, +Inbound, +ErrorT>(
-  fn: (Arg, (Inbound) => mixed, (ErrorT) => mixed) => mixed,
-  label: string
-): Arg => Task<Arg, Inbound, ErrorT> {
-  return (outbound: Arg) =>
-    taskCreator_(
-      (success, error) => fn(outbound, success, error),
-      outbound,
-      label
-    );
-}
+export type EffectReport = 'start' | 'success' | 'error';
 
 /*
- * Implementation
+ * This is the private constructor for creating a Task object. End users
+ * probably want to use `Task.fromCallback` or `task.fromPromise`.
+ * It adds instrumentation to the effector, and also attaches some info
+ * useful for making assertions in test.
  */
-
-// although this is global, we drain it
-// between dispatches to the store.
-// you can think of this queue as "thread local."
-let globalTaskQueue: Task<mixed, mixed>[] = [];
-
-// used for debugging
-let enableStackCapture = true;
-let lastWithTaskCall: Error | null = null;
-const IMPROPER_TASK_USAGE = `Tasks should not be added outside of reducers.`;
-
-/*
- * Use this to create a new task
- */
-function taskCreator_<Arg, Inbound, InboundError>(
+export function taskCreator_<Arg, Inbound, InboundError>(
   effector: ((Inbound) => mixed, (InboundError) => mixed) => mixed,
   payload: Arg,
   label: string
 ): Task<Arg, Inbound, InboundError, Inbound, InboundError> {
-  // Instrument the task with reporting!
+  // Instrument the task with reporting
   const effectorPrime = (success, error) => {
     reportEffects('start', newTask, payload);
     return effector(
@@ -190,14 +195,11 @@ function taskCreator_<Arg, Inbound, InboundError>(
 
 // Internal task constructor.
 // Note that payload is only kept around for testing/debugging purposes
+// It should not be introspected outside of test
 function _task<Arg, Inbound, InboundError, Result, Error>(
   payload: Arg,
   next: (
-    runEffect: <S, E>(
-      ((S) => mixed, (E) => mixed) => mixed,
-      (S) => mixed,
-      (E) => mixed
-    ) => mixed,
+    runEffect: BiApplicative<Inbound, InboundError>,
     (Result) => mixed,
     (Error) => mixed
   ) => mixed,
@@ -216,9 +218,8 @@ function _task<Arg, Inbound, InboundError, Result, Error>(
     run: next,
 
     /*
-     * Task Methods
+     * Public Task Methods
      */
-
     chain,
     map,
     bimap
@@ -274,196 +275,27 @@ function _task<Arg, Inbound, InboundError, Result, Error>(
   }
 }
 
-const CACHED_PROMISE: Promise<void> = Promise.resolve();
-const makeDispatchAsync = (dispatch: Function) => (action: Object) =>
-  CACHED_PROMISE.then(() => dispatch(action));
-
-/*
- * You need to install this middleware for tasks to have their handlers run.
- *
- * You probably do not want to use this middleware within your test environment.
- * Instead, use `drainTasksForTesting` to retrieve and make assertions about them.
- */
-export const taskMiddleware = (store: {dispatch: Function}) => (
-  next: Function
-) => (action: Object) => {
-  if (!(module: any).hot && enableStackCapture && globalTaskQueue.length > 0) {
-    const err = lastWithTaskCall;
-    lastWithTaskCall = null;
-    throw err;
-  }
-
-  next(action);
-  const dispatch = makeDispatchAsync(store.dispatch);
-
-  if (globalTaskQueue.length > 0) {
-    const taskResolutions = globalTaskQueue.map(task =>
-      runTaskActual(task, dispatch, dispatch)
-    );
-
-    globalTaskQueue = [];
-    lastWithTaskCall = null;
-    return Promise.all(taskResolutions);
-  }
-
-  return CACHED_PROMISE;
-};
-
-type MixedToMixed = mixed => mixed;
-
-// Run the task with the proper effect
-function runTaskActual(task, success, error) {
-  if (typeof task.run !== 'function') {
-    throw new Error('Attempted to run something that is not a task.');
-  }
-  return task.run(
-    (f, s, e) => f(s, e),
-    // unsafe coerce this because it doesn't matter
-    ((success: any): MixedToMixed),
-    ((error: any): MixedToMixed)
-  );
-}
-
-/**
- * Use this function in your reducer to add tasks to an action handler.
- * The task will be lifted up to the top of your app.
- */
-export function withTasks<State>(state: State, tasks: AnyTasks): State {
-  if (!(module: any).hot && enableStackCapture && !lastWithTaskCall) {
-    lastWithTaskCall = trace(IMPROPER_TASK_USAGE);
-  }
-  if (tasks instanceof Array) {
-    globalTaskQueue = globalTaskQueue.concat(tasks);
-  } else {
-    globalTaskQueue.push(tasks);
-  }
-  return state;
-}
-
-/**
- * A helpful alias for providing just one task.
- * `withTask(state, task1)` is the same as `withTasks(state, [task1])`.
- */
-export const withTask: <State>(
-  state: State,
-  task: AnyTask
-) => State = (withTasks: any);
-
-/*
- * This function should only be used in test environments to make assertions about
- * tasks as part of the test. Application code should not be mucking around with
- * the list of tasks. If you want to display information about tasks in your component,
- * add that information to your state tree when you create the task.
- */
-export function drainTasksForTesting(): $ReadOnlyArray<MixedTask> {
-  const drained = globalTaskQueue;
-  globalTaskQueue = [];
-  lastWithTaskCall = null;
-  return drained;
-}
-
-/*
- * Run a task, using `simulator` for bi-application.
- * Simulator recieves:
- * 1. a function that kicks off a side effect, with success and error handers.
- * 2. a success handler to call with a mocked response.
- * 3. an error handler to call with a mocked out response.
- */
-export function simulateTask<Inbound, InboundError, Result, Error, S, E>(
-  someTask: Task<*, Inbound, InboundError, Result, Error>,
-  simulator: (
-    ((S) => mixed, (E) => mixed) => mixed,
-    (S) => mixed,
-    (E) => mixed
-  ) => mixed
-): Result | Error {
-  let returned = null;
-  const setReturned = val => {
-    returned = val;
-  };
-  someTask.run(simulator, setReturned, setReturned);
-  return returned;
-}
-
-export function succeedTaskWithValues<Result>(
-  someTask: Task<*, *, *, Result>,
-  values: $ReadOnlyArray<any>
-): Result | null {
-  let index: number = 0;
-  let returned = null;
-  const setReturned = val => {
-    returned = val;
-  };
-  someTask.run(
-    (_, s) => {
-      if (index >= values.length) {
-        throw new Error('Not enough values were provided!');
-      }
-      const returned = s(values[index]);
-      index += 1;
-      return returned;
-    },
-    setReturned,
-    setReturned
-  );
-  return returned;
-}
-
-/*
- * Get the value of a task, always providing the given value as the inbound result.
- * If your task uses `.chain` or `Task.all`, you probbaly
- */
-export function succeedTaskInTest<Inbound, Result>(
-  someTask: Task<*, Inbound, *, Result, *>,
-  value: Inbound
-): Result {
-  let returned;
-  const setReturned = (val: Result) => {
-    returned = val;
-  };
-  someTask.run((_, s, e) => s(value), setReturned, setReturned);
-  if (typeof returned === 'undefined') {
-    throw new Error('Success handler was never called!');
-  }
-  return returned;
-}
-
-export function errorTaskInTest<InboundError, ErrorT>(
-  someTask: Task<*, *, InboundError, *, ErrorT>,
-  value: InboundError
-): ErrorT {
-  let returned;
-  const setReturned = (val: ErrorT) => {
-    returned = val;
-  };
-  someTask.run((_1, _2, e) => e(value), setReturned, setReturned);
-  if (typeof returned === 'undefined') {
-    throw new Error('Success handler was never called!');
-  }
-  return returned;
-}
-
-/*
- * In order to make it easy to track down incorrect uses for `withTask`, we capture exception
- * objects for every call to withTask. This has some performance overhead, so you'll
- * probably want to disable it in production.
- */
-export function disableStackCapturing(): void {
-  enableStackCapture = false;
-}
-
 /*
  * Record the inputs/outputs of all tasks, for debugging or inspecting.
  * This feature should not be used to implement runtime behavior.
  */
-let reportEffects: (event: string, task: any, payload: mixed) => void = (
-  event: string,
-  task: any,
+let reportEffects: (
+  event: EffectReport,
+  task: AnyTask,
   payload: mixed
-) => {};
+) => void = (event: EffectReport, task: AnyTask, payload: mixed) => {};
 
+/**
+ * ## `reportTasksForTesting`
+ *
+ * Takes a function that is called whenever a task is dispatched,
+ * returns, or errors.
+ *
+ * Note that only one function can be registered with this hook.
+ * The last provided function is the one that takes effect.
+ */
 export function reportTasksForTesting(
-  fn: (event: string, task: MixedTask, payload: mixed) => void
+  fn: (event: EffectReport, task: AnyTask, payload: mixed) => void
 ): void {
   reportEffects = fn;
 }
@@ -474,7 +306,13 @@ type ExtractResult = <R>(Task<*, *, *, R>) => R;
 type ExtractError = <E>(Task<*, *, *, *, E>) => E;
 
 /*
- * Task.all combinator. Acts just like `Promise.all`.
+ * ## `Task.all`
+ *
+ * Given an array of Tasks, returns a new task that runs all the effects
+ * of the original in parallel, with an array result where each element
+ * corresponds to a task.
+ *
+ * Acts like `Promise.all`.
  */
 export function all<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
   tasks: AllTasks
@@ -529,23 +367,4 @@ export function all<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
 
     'Task.all(' + tasks.map(({type}) => type).join(', ') + ')'
   );
-}
-
-// Nice aliases:
-// `import Task from 'react-palm/tasks';`
-export default {
-  all,
-  fromCallback,
-  fromPromise
-};
-
-/*
- * Helpers
- */
-function trace(message: string): Error {
-  try {
-    throw new Error(message);
-  } catch (e) {
-    return e;
-  }
 }
