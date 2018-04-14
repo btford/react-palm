@@ -1,5 +1,5 @@
 // @flow
-import {type AnyTask, type AnyTasks} from './core';
+import {type AnyTask, type AnyTasks, _run} from './core';
 import {
   getGlobalTaskQueue,
   updateGlobalTaskQueue,
@@ -60,11 +60,8 @@ const biApply = (f, s, e) => f(s, e);
 // Run the task with the proper effect
 function runTaskActual(dispatch) {
   return function(task: AnyTask) {
-    if (typeof task.run !== 'function') {
-      throw new Error('Attempted to run something that is not a task.');
-    }
     // unsafe coerce this because it doesn't matter
-    return task.run(biApply, dispatch, dispatch);
+    return _run(task, biApply, dispatch, dispatch);
   };
 }
 

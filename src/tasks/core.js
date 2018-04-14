@@ -82,6 +82,9 @@ export function _run<Inbound, InboundError, Result, ErrorT>(
   success: Result => mixed,
   error: ErrorT => mixed
 ): mixed {
+  if (typeof task.run !== 'function') {
+    throw new Error('Attempted to run something that is not a task.');
+  }
   return task.run(fnApplication, success, error);
 }
 
