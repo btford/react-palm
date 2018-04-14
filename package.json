@@ -5,7 +5,7 @@
   "main": "dist/src",
   "homepage": "https://github.com/btford/react-palm",
   "scripts": {
-    "build": "rm -rf dist && babel src --out-dir dist && flow-copy-source -v src/ dist",
+    "build": "rm -rf dist && babel src --out-dir dist && flow-copy-source -v src/ dist && cp package.json ./dist && cp LICENSE.md ./dist",
     "test": "jest",
     "precommit": "pretty-quick --staged"
   },
