@@ -13,7 +13,7 @@ if (process.env.NODE_ENV !== 'production') {
   (function() {
     'use strict';
 
-    var ReactDOM = require('react-dom');
+    var ReactDOM = require('./react-dom.development');
     var _assign = require('object-assign');
 
     /**

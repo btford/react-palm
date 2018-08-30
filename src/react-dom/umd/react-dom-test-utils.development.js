@@ -11,7 +11,10 @@
 
 (function(global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined'
-    ? (module.exports = factory(require('react'), require('react-dom')))
+    ? (module.exports = factory(
+        require('react'),
+        require('./react-dom.development')
+      ))
     : typeof define === 'function' && define.amd
       ? define(['react', 'react-dom'], factory)
       : (global.ReactTestUtils = factory(global.React, global.ReactDOM));
