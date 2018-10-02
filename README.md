@@ -136,3 +136,29 @@ specific applications that I work on. It contains trade-offs that may not be gen
 - [PureScript](http://www.purescript.org/), a feature-rich, functional compile-to-JS language.
 - [Choo](https://github.com/yoshuawuyts/choo), a small, Elm-like framework for JavaScript.
 - [redux-loop](https://github.com/redux-loop/redux-loop) a library that provides a very literal translation of commands and tasks from Elm to Redux.
+
+### Developing
+
+```
+yarn
+```
+
+#### Publishing (to npm)
+
+1. Update the version in `package.json` manually or via [`npm version`](https://docs.npmjs.com/getting-started/publishing-npm-packages#how-to-update-the-version-number).
+
+2. Commit and push.
+
+3. Create tags for the new version. Either:
+  - use the [GitHub GUI](https://github.com/btford/react-palm/releases/new) to create and push new tags
+  - or go [the old-fashioned route](https://git-scm.com/book/en/v2/Git-Basics-Tagging)
+
+4. Publish:
+
+Run `build` and publish from the resulting `dist` folder to ensure built artifacts are included in the published package:
+
+```
+yarn build
+cd dist
+npm publish
+```
