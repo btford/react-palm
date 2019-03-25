@@ -1,3 +1,4 @@
 *.md
 flow-typed/*
 *.json
+.travis.yml

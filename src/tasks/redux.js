@@ -28,7 +28,7 @@ const IMPROPER_TASK_USAGE = `Tasks should not be added outside of reducers.`;
  * That promise will resolve when all pending tasks for that call to `dispatch`
  * have finished (including calls transitively enqueued by tasks that dispatch actions).
  */
-export const taskMiddleware = (store: {dispatch: Function}) => (
+export const taskMiddleware = (store: {dispatch: Object => any}) => (
   next: Object => void
 ) => (action: Object) => {
   // If we begin a call to dispatch with tasks still in the queue,
