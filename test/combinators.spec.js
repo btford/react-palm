@@ -40,15 +40,18 @@ test('Task.all([t.map(f)]) === Task.all([t]).map([r] => f(r))', () => {
 });
 
 test('Tasks can be used in polymorphic functions', () => {
-  type TT1 = {|config: {|+name: string|}, type: 'one'|};
-  const T1 = Task.fromCallback(
-    (v: {|+name: string|}, cb) => cb(undefined, v),
+  type TT1 = {|
+    config: {|+name: string|},
+    type: 'one'
+  |};
+  const T1 = Task.fromCallback<{|+name: string|}, {|+name: string|}, _>(
+    (v, cb) => cb(undefined, v),
     'T1'
   );
 
   type TT2 = {|config: {|+age: number|}, type: 'two'|};
-  const T2 = Task.fromCallback(
-    (v: {|+age: number|}, cb) => cb(undefined, v),
+  const T2 = Task.fromCallback<{|+age: number|}, {|+age: number|}, _>(
+    (v, cb) => cb(undefined, v),
     'T2'
   );
 
@@ -77,7 +80,9 @@ test('Task.all creates a new task which runs its delegates', () => {
   const reducer = (state = [], action) => {
     return action.type === ADD
       ? withTask(state, MULTI_TASK)
-      : action.type === SET_SYNC ? action.payload : state;
+      : action.type === SET_SYNC
+      ? action.payload
+      : state;
   };
 
   const store = taskStore(reducer);
@@ -95,7 +100,9 @@ test('Task.all resolves with an empty array', done => {
   const reducer = (state = ['1', '2', '3'], action) => {
     return action.type === ADD
       ? withTask(state, MULTI_TASK)
-      : action.type === SET_SYNC ? action.payload : state;
+      : action.type === SET_SYNC
+      ? action.payload
+      : state;
   };
 
   const store = taskStore(reducer);
@@ -116,7 +123,9 @@ test('Task.map works in a real store', done => {
   const reducer = (state = 0, action) => {
     return action.type === ADD
       ? withTask(state, MAP_TASK)
-      : action.type === SET_SYNC ? action.payload : state;
+      : action.type === SET_SYNC
+      ? action.payload
+      : state;
   };
 
   const store = taskStore(reducer);
@@ -135,7 +144,9 @@ test('Task.chain works with a real store', done => {
   const reducer = (state = 0, action) => {
     return action.type === ADD
       ? withTask(state, CHAIN_TASK)
-      : action.type === SET_SYNC ? action.payload : state;
+      : action.type === SET_SYNC
+      ? action.payload
+      : state;
   };
 
   const store = taskStore(reducer);

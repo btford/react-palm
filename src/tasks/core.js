@@ -97,7 +97,7 @@ export type TaskCreator<
   InboundError = mixed,
   Result = Inbound,
   Error = InboundError
-> = Arg => Task<Arg, Inbound, InboundError>;
+> = Arg => Task<Arg, Inbound, InboundError> & $ReadOnly<{|type: string|}>;
 
 /**
  * A group of tasks, all of different types
@@ -125,13 +125,15 @@ type Callback<Error, Result> = (err?: Error, res: Result) => mixed;
 export function fromPromise<Arg, +Inbound>(
   fn: Arg => Promise<Inbound>,
   label: string
-): Arg => Task<Arg, Inbound, mixed, Inbound, mixed> {
-  return outbound =>
+): TaskCreator<Arg, Inbound, mixed, Inbound, mixed> {
+  const creator = outbound =>
     taskCreator_(
       (success, error) => fn(outbound).then(success, error),
       outbound,
       label
     );
+  creator.type = label;
+  return (creator: any);
 }
 
 /**
@@ -146,14 +148,16 @@ export function fromPromise<Arg, +Inbound>(
 export function fromCallback<Arg, +Inbound, +ErrorT>(
   fn: (Arg, Callback<ErrorT, Inbound>) => mixed,
   label: string
-): Arg => Task<Arg, Inbound, ErrorT> {
-  return (outbound: Arg) =>
+): TaskCreator<Arg, Inbound, ErrorT> {
+  const creator = (outbound: Arg) =>
     taskCreator_(
       (success, error) =>
         fn(outbound, (err, result) => (err ? error(err) : success(result))),
       outbound,
       label
     );
+  creator.type = label;
+  return (creator: any);
 }
 
 export type EffectReport = 'start' | 'success' | 'error';
