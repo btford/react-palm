@@ -1,6 +1,6 @@
 {
   "name": "react-palm",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Elm-like architecture for React apps",
   "main": "dist/src",
   "homepage": "https://github.com/btford/react-palm",
