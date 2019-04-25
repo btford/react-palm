@@ -93,10 +93,10 @@ export function _run<Inbound, InboundError, Result, ErrorT>(
  */
 export type TaskCreator<
   Arg,
-  Inbound,
-  InboundError = mixed,
-  Result = Inbound,
-  Error = InboundError
+  +Inbound,
+  +InboundError = mixed,
+  -Result = Inbound,
+  -Error = InboundError
 > = Arg => Task<Arg, Inbound, InboundError> & $ReadOnly<{|type: string|}>;
 
 /**
@@ -122,10 +122,10 @@ type Callback<Error, Result> = (err?: Error, res: Result) => mixed;
  *
  * Uses the second arg as a label for debugging.
  */
-export function fromPromise<Arg, +Inbound>(
+export function fromPromise<Arg, -Inbound, -InboundError>(
   fn: Arg => Promise<Inbound>,
   label: string
-): TaskCreator<Arg, Inbound, mixed, Inbound, mixed> {
+): TaskCreator<Arg, Inbound, InboundError> {
   const creator = outbound =>
     taskCreator_(
       (success, error) => fn(outbound).then(success, error),
@@ -145,10 +145,10 @@ export function fromPromise<Arg, +Inbound>(
  *
  * Uses the second arg as a label for debugging.
  */
-export function fromCallback<Arg, +Inbound, +ErrorT>(
-  fn: (Arg, Callback<ErrorT, Inbound>) => mixed,
+export function fromCallback<Arg, +Inbound, +InboundError>(
+  fn: (Arg, Callback<InboundError, Inbound>) => mixed,
   label: string
-): TaskCreator<Arg, Inbound, ErrorT> {
+): TaskCreator<Arg, Inbound, InboundError> {
   const creator = (outbound: Arg) =>
     taskCreator_(
       (success, error) =>
@@ -168,11 +168,11 @@ export type EffectReport = 'start' | 'success' | 'error';
  * It adds instrumentation to the effector, and also attaches some info
  * useful for making assertions in test.
  */
-export function taskCreator_<Arg, Inbound, InboundError>(
+export function taskCreator_<Arg, +Inbound, +InboundError>(
   effector: ((Inbound) => mixed, (InboundError) => mixed) => mixed,
   payload: Arg,
   label: string
-): Task<Arg, Inbound, InboundError, Inbound, InboundError> {
+): Task<Arg, Inbound, InboundError> {
   // Instrument the task with reporting
   const effectorPrime = (success, error) => {
     reportEffects('start', newTask, payload);
