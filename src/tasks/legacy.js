@@ -23,10 +23,14 @@ export function taskCreator<Arg, +Inbound, +ErrorT>(
   fn: (Arg, (Inbound) => mixed, (ErrorT) => mixed) => mixed,
   label: string
 ): Arg => Task<Arg, Inbound, ErrorT> {
-  return (outbound: Arg) =>
+  const creator = (outbound: Arg) =>
     taskCreator_(
       (success, error) => fn(outbound, success, error),
       outbound,
       label
     );
+
+  creator.type = label;
+
+  return creator;
 }
