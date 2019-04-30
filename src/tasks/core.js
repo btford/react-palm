@@ -97,7 +97,7 @@ export type TaskCreator<
   +InboundError = mixed,
   -Result = Inbound,
   -Error = InboundError
-> = Arg => Task<Arg, Inbound, InboundError> & $ReadOnly<{|type: string|}>;
+> = (Arg => Task<Arg, Inbound, InboundError>) & $ReadOnly<{|type: string|}>;
 
 /**
  * A group of tasks, all of different types
@@ -112,7 +112,8 @@ export type AnyTasks = $ReadOnlyArray<AnyTask>;
 export type MixedTask = Task<mixed, mixed>;
 export type MixedTasks = $ReadOnlyArray<MixedTask>;
 
-type Callback<Error, Result> = (err?: Error, res: Result) => mixed;
+type Callback<Error, Result> = ((err: Error) => mixed) &
+  ((err: void, result: Result) => mixed);
 
 /**
  * ## `Task.fromCallback`
