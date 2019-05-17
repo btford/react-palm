@@ -1,3 +1,4 @@
 dist/
 *.log
 node_modules/
+.idea/
