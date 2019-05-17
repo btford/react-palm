@@ -359,7 +359,7 @@ export function all<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
       }
 
       function anyError(err) {
-        if (err) {
+        if (!err) {
           return;
         }
         errorValue = err;
