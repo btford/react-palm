@@ -17,7 +17,7 @@ if (process.env.NODE_ENV !== "production") {
 
 var _assign = require('object-assign');
 var React = require('react');
-var ReactDOM = require('react-dom');
+var ReactDOM = require('../../react-dom');
 
 /**
  * Use invariant() to assert state which your program assumes to be true.
