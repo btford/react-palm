@@ -46,7 +46,7 @@
   },
   "peerDependencies": {
     "enzyme": "^3.6.0",
-    "enzyme-adapter-utils": "^1.8.0",
+    "enzyme-adapter-utils": "^1.15.2",
     "react": "^16.4.1",
     "react-test-renderer": "^16.4.1"
   }
