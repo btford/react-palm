@@ -13,8 +13,6 @@
 <h1 align="center">react-palm</h1>
 <h5 align="center">A cohesive strategy for managing state, handling side effects, and testing React Apps.</h5>
 
-<p align="center">:warning: This is work in progress, please don't bother me about it, thanks. :warning:</p>
-
     yarn add react-palm
 
 
