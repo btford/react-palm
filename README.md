@@ -11,9 +11,32 @@
 </p>
 
 <h1 align="center">react-palm</h1>
+
 <h5 align="center">A cohesive strategy for managing state, handling side effects, and testing React Apps.</h5>
 
     yarn add react-palm
+
+### What is a Task?
+
+`Task`s can be understood in terms of their relationship to `Promise`s. A `Promise` represents a future value, but for which the computation has already begun. A `Task` represents a future computation, or future side effect. It's like a function that you haven't run yet. `Task`s are lazy, where `Promise`s are eager.
+
+Why? By capturing side effects this way, we can easily test them without having to build up a large suite of mocks. Code written this way is easy to test.
+
+// Promise -> new Promise( () => window.fetch('example.com') )
+// Promise -> new Promise( () => Math.random() )
+// Promise -> new Promise( () => localStorage )
+
+// Task -> () => new Promise( ... )
+
+### Task Redux Middleware
+
+`Task`s easily adapt to redux using the provided middleware. This allows you to build a state machine from `Action`s and `Task`s. Make side effects a responsibility of the reducer while keeping the reducer pure.
+
+### Why does it matter?
+By capturing side effects this way, we can easily test them without having to build up a large suite of mocks. 
+The computation (when you call task.run()) might include a side-effect, but as long as the task is just sitting there, it's pure.
+Keeps reducer pure. At the same time owns the entire flow of doing XHR.
+
 
 
 ### Setup
@@ -42,15 +65,18 @@ const store = createStore(reducer, initialState, compose(...enhancers))
 
 ### Usage
 
+#### Task.fromPromise
 Here is a sample of what a delay task which triggers an action after a
 specified amount of time would look like.
 
 ```javascript
-import { taskCreator } from 'react-palm'
+import Task from 'react-palm/tasks';
 
-export const DELAY = taskCreator((time, success) =>
-  new Promise(resolve => setTimeout(resolve, time))
-    .then(() => success()), 'DELAY');
+export const DELAY = Task.fromPromise((time) =>
+  new Promise(resolve => window.setTimeout(resolve, time)), 
+  
+  'DELAY'
+);
 ```
 
 You can use the task in your reducer like this:
@@ -59,7 +85,7 @@ You can use the task in your reducer like this:
 import { withTask } from 'react-palm'
 import { handleActions, createAction } from 'react-palm/actions'
 
-import {DELAY} from './tasks/delay'
+import { DELAY } from './tasks/delay'
 
 export const incrementWithDelay = createAction('DELAY_INCREMENT')
 const increment = createAction('INCREMENT')
@@ -81,6 +107,15 @@ Whatever you pass as the first argument will become the updated state, so you
 can update your state before the task is executed if you want. This might be useful
 to update a loading spinner, for instance.
 
+#### Task.fromCallback
+
+#### Task.chain
+
+#### Task.all
+
+#### bimap
+
+
 #### Testing
 
 We designed `react-palm` with testing in mind. Since you probably don't want
@@ -90,7 +125,7 @@ utility that will remove all the tasks from the queue and return them.
 You can now assert that they have the expected type and payload.
 
 ```javascript
-import { drainTasksForTesting } from 'react-palm'
+import { drainTasksForTesting, succeedTaskInTest, errorTaskInTest } from 'react-palm'
 
 import reducer, { incrementWithDelay } from './reducer'
 import DELAY from './tasks/delay'
@@ -104,8 +139,16 @@ test('The delay task should be valid', t => {
   t.is(tasks[0].type, DELAY)
   t.is(tasks[0].action.type, 'INCREMENT')
 
-  const newState = reducer(state, task.action)
-  t.is(newState, 43)
+ 
+ // test success
+ const successState = reducer(newState, succeedTaskInTest(task1, mockSuccessResult));
+ t.deepEqual(successState, expectedState, ‘State should be updated when task succeed');
+
+ // test LOAD_FILE_TASK error
+ const errorState = reducer(nextState, errorTaskInTest(task1, mockErrorResult));
+ t.deepEqual(errorState, expectedErrorState, ‘State should be updated when task errored);
+
+ t.is(newState, 43)
 })
 ```
 

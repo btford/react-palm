@@ -376,3 +376,61 @@ export function all<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
     'Task.all(' + tasks.map(({type}) => type).join(', ') + ')'
   );
 }
+
+type ExtractSettled = <R, E>(Task<*, *, *, R, E>) => 
+  ({| status: 'fulfilled', value: R |} | {|status: 'rejected', value: E |});
+
+/*
+ * ## `Task.allSettled`
+ *
+ * Given an array of Tasks, returns a new task that runs all the effects
+ * of the original in parallel, with an array result where each element
+ * corresponds to a task.
+ *
+ * Acts like `Promise.allSettled`.
+ */
+export function allSettled<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
+  tasks: AllTasks
+): Task<
+  $TupleMap<AllTasks, ExtractArg>,
+  *,
+  *,
+  $TupleMap<AllTasks, ExtractSettled>,
+  mixed
+> {
+  return _task(
+    tasks.map(task => task.payload),
+    (
+      runEffect,
+      success: ($TupleMap<AllTasks, ExtractResult>) => mixed,
+      error
+    ) => {
+      if (tasks.length === 0) {
+        return success([]);
+      }
+      const accumulated = Array(tasks.length);
+      let complete = 0;
+
+      function onOneTaskFinish(index, status) {
+        return value => {
+          accumulated[index] = {status, value};
+          complete += 1;
+          if (complete === tasks.length) {
+            return success(accumulated);
+          }
+        };
+      }
+
+      return Promise.allSettled(
+        tasks.map((task, index) =>
+          task.run(runEffect, 
+              onOneTaskFinish(index, 'fulfilled'), 
+              onOneTaskFinish(index, 'rejected')
+          )
+        )
+      );
+    },
+
+    'Task.allSettled(' + tasks.map(({type}) => type).join(', ') + ')'
+  );
+}
