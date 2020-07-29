@@ -109,14 +109,76 @@ to update a loading spinner, for instance.
 
 #### Task.fromCallback
 
-#### Task.chain
+Wraps a node-style callback in a Task. `fromPromise` takes a function, which recieves the argument that the task is called with, and a node-style callback function (with type `(err, res) => void`), where the first argument represents the error when present (or `null` when successful), and the second argument represents the success value (or `null` in the case of an error).
+
+```javascript
+// DELAY is a task that recieves how long to wait (in ms), and that resolves
+// with a Date object representing the current time after waiting.
+export const DELAY = Task.fromCallback((time, cb) =>
+  window.setTimeout(() => cb(null, new Date()), time), 
+  
+  'DELAY'
+);
+
+// delay 100ms, then do something using the current time.
+DELAY(100).map(currentTime => ...);
+```
+
+This example is equal to the one above using `Task.fromPromise`.
 
 #### Task.all
 
-#### bimap
+Like `Promise.all`, but for tasks. Given an array of tasks, returns a new task whose success value will be an array of results.
+
+```
+import Task from 'react-palm/tasks';
+
+const FETCH = Task.fromPromise((url) => window.fetch(url), 'FETCH');
+
+const FETCH_SEVERAL = Task.all([ FETCH('example.com'), FETCH('google.com') ])
+
+FETCH_SEVERAL.bimap(([exampleResult, googleResult]) => ..., err => ...);
+```
+
+#### task.chain
+
+`chain` lets you run one task immediately after another.
+`task.chain` accepts a function like: `(success) => nextTask`. This function recieves the success value of the first task, and should return another task to be run.
+
+Using the tasks we defined above, we can create a task that first waits `100ms`, and then issues an HTTP request:
+
+```javascript
+const WAIT_AND_FETCH = DELAY(100).chain(() => FETCH('example.com'));
+
+// The resultant Task from chain will have the success payload from FETCH
+WAIT_AND_FETCH.bimap(httpResult => ..., err => ...);
+```
+
+When used with Redux, this is a good way to avoid having to create extra actions.
+
+#### task.bimap
+
+Provide transforms for the success and error payload of a task. Bimap takes
+
+`bimap` can be chained multiple times:
+
+```
+task
+  .bimap(result => result + 1, error => 'Error: ' + error)
+  .bimap(result => 2 * result, error => error + '!!')
+```
+
+`bimap` preserves composition, so the above is the same as writing:
+
+```
+task
+  .bimap(result => 2 * (result + 1), error => 'Error: ' + error + '!!')
+```
+
+When using Tasks with Redux, we typically use `bimap` to transform the result of a Task into actions to be dispatched on completion.
 
 
-#### Testing
+### Testing
 
 We designed `react-palm` with testing in mind. Since you probably don't want
 to create API calls in a testing environment, we provide a `drainTasksForTesting`
