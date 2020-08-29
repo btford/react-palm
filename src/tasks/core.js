@@ -138,6 +138,37 @@ export function fromPromise<Arg, -Inbound, -InboundError>(
 }
 
 /**
+ * ## `Task.fromCallbackWithProgress`
+ * Returns a task-creator from a function that returns a promise.
+ *
+ * `({arg, onProgress}) => Promise<string[]>` -> `({arg, onProgress}) => Task<string[]>`.
+ *
+ * Uses the second arg as a label for debugging.
+ */
+export function fromPromiseWithProgress<Arg, -Inbound, -InboundError>(
+  fn: ({arg: Arg, onProgress}) => Promise<Inbound>,
+  label: string
+): TaskCreator<Arg, Inbound, InboundError> {
+  const creator = ({arg, onProgress}) => {
+    // allows for late binding
+    const wrapped = (ev) => task.onProgress(ev);
+
+    const task = taskCreator_(
+      (success, error) => fn({arg: outbound, onProgress: wrapped}).then(success, error),
+      outbound,
+      label
+    );
+
+    task.onProgress = onProgress;
+
+    return task;
+  }
+    
+  creator.type = label;
+  return (creator: any);
+}
+
+/**
  * `Task.fromCallback`
  *
  * Turn a node-style callback function:
