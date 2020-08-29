@@ -60,6 +60,10 @@ const biApply = (f, s, e) => f(s, e);
 // Run the task with the proper effect
 function runTaskActual(dispatch) {
   return function(task: AnyTask) {
+    if (task.onProgress) {
+      const onProgress = task.onProgress;
+      task.onPromise = (ev) => dispatch(onProgress(ev));
+    }
     // unsafe coerce this because it doesn't matter
     return _run(task, biApply, dispatch, dispatch);
   };
