@@ -55,17 +55,19 @@ export const taskMiddleware = (store: {dispatch: Object => any}) => (
 
 // Given a function that accepts two continuations (one for success, one for error),
 // call the function supplying the provided continuations.
-const biApply = (f, s, e) => f(s, e);
+const biApply = (f, s, e, c) => f(s, e, c);
 
 // Run the task with the proper effect
 function runTaskActual(dispatch) {
   return function(task: AnyTask) {
-    if (task.onProgress) {
-      const onProgress = task.onProgress;
-      task.onPromise = (ev) => dispatch(onProgress(ev));
-    }
     // unsafe coerce this because it doesn't matter
-    return _run(task, biApply, dispatch, dispatch);
+    return _run(
+      task,
+      biApply,
+      dispatch,
+      dispatch,
+      ({onProgress: dispatch}: any)
+    );
   };
 }
 

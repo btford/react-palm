@@ -41,7 +41,8 @@ export opaque type Task<
   run(
     BiApplicative<Inbound, InboundError>,
     (Result) => mixed,
-    (Error) => mixed
+    (Error) => mixed,
+    context: mixed
   ): mixed,
 
   map<ResultPrime>(
@@ -61,7 +62,8 @@ export opaque type Task<
 // A function that does some side-effect when run.
 export type Effector<Inbound, InboundError> = (
   (Inbound) => mixed,
-  (InboundError) => mixed
+  (InboundError) => mixed,
+  context: mixed
 ) => mixed;
 
 // A function that runs an effector for some environment.
@@ -70,7 +72,8 @@ export type Effector<Inbound, InboundError> = (
 export type BiApplicative<S, E> = (
   Effector<S, E>,
   (S) => mixed,
-  (E) => mixed
+  (E) => mixed,
+  mixed
 ) => mixed;
 
 // Private API for running a task. Do not use this directly.
@@ -80,12 +83,13 @@ export function _run<Inbound, InboundError, Result, ErrorT>(
   task: Task<*, Inbound, InboundError, Result, ErrorT>,
   fnApplication: BiApplicative<Inbound, InboundError>,
   success: Result => mixed,
-  error: ErrorT => mixed
+  error: ErrorT => mixed,
+  context?: mixed
 ): mixed {
   if (typeof task.run !== 'function') {
     throw new Error('Attempted to run something that is not a task.');
   }
-  return task.run(fnApplication, success, error);
+  return task.run(fnApplication, success, error, context);
 }
 
 /*
@@ -137,6 +141,8 @@ export function fromPromise<Arg, -Inbound, -InboundError>(
   return (creator: any);
 }
 
+const noop = () => {};
+
 /**
  * ## `Task.fromCallbackWithProgress`
  * Returns a task-creator from a function that returns a promise.
@@ -146,24 +152,25 @@ export function fromPromise<Arg, -Inbound, -InboundError>(
  * Uses the second arg as a label for debugging.
  */
 export function fromPromiseWithProgress<Arg, -Inbound, -InboundError>(
-  fn: ({arg: Arg, onProgress}) => Promise<Inbound>,
+  fn: ({arg: Arg, onProgress: any => void}) => Promise<Inbound>,
   label: string
 ): TaskCreator<Arg, Inbound, InboundError> {
   const creator = ({arg, onProgress}) => {
-    // allows for late binding
-    const wrapped = (ev) => task.onProgress(ev);
-
     const task = taskCreator_(
-      (success, error) => fn({arg: outbound, onProgress: wrapped}).then(success, error),
-      outbound,
+      (success, error, context) =>
+        fn({
+          arg,
+          onProgress:
+            (context ? v => (context: any).onProgress(onProgress(v)) : noop) ||
+            noop
+        }).then(success, error),
+      arg,
       label
     );
 
-    task.onProgress = onProgress;
-
     return task;
-  }
-    
+  };
+
   creator.type = label;
   return (creator: any);
 }
@@ -201,12 +208,16 @@ export type EffectReport = 'start' | 'success' | 'error';
  * useful for making assertions in test.
  */
 export function taskCreator_<Arg, +Inbound, +InboundError>(
-  effector: ((Inbound) => mixed, (InboundError) => mixed) => mixed,
+  effector: (
+    (Inbound) => mixed,
+    (InboundError) => mixed,
+    context?: mixed
+  ) => mixed,
   payload: Arg,
   label: string
 ): Task<Arg, Inbound, InboundError> {
   // Instrument the task with reporting
-  const effectorPrime = (success, error) => {
+  const effectorPrime = (success, error, context) => {
     reportEffects('start', newTask, payload);
     return effector(
       result => {
@@ -216,7 +227,8 @@ export function taskCreator_<Arg, +Inbound, +InboundError>(
       reason => {
         reportEffects('error', newTask, reason);
         return error(reason);
-      }
+      },
+      context
     );
   };
 
@@ -225,7 +237,8 @@ export function taskCreator_<Arg, +Inbound, +InboundError>(
 
   const newTask = _task(
     payload,
-    (runEffect, success, error) => runEffect(effectorPrime, success, error),
+    (runEffect, success, error, context) =>
+      runEffect(effectorPrime, success, error, context),
     label
   );
 
@@ -240,7 +253,8 @@ function _task<Arg, Inbound, InboundError, Result, Error>(
   next: (
     runEffect: BiApplicative<Inbound, InboundError>,
     (Result) => mixed,
-    (Error) => mixed
+    (Error) => mixed,
+    context: mixed
   ) => mixed,
   label: string
 ): Task<Arg, Inbound, InboundError, Result, Error> {
@@ -269,11 +283,12 @@ function _task<Arg, Inbound, InboundError, Result, Error>(
   ): Task<Arg, Inbound, InboundError, ResultPrime, Error> {
     return _task(
       payload,
-      (runEffect, success, error) =>
+      (runEffect, success, error, context) =>
         next(
           runEffect,
           (result: Result) => success(successTransform(result)),
-          error
+          error,
+          context
         ),
       label
     );
@@ -285,11 +300,12 @@ function _task<Arg, Inbound, InboundError, Result, Error>(
   ): Task<Arg, Inbound, InboundError, ResultPrime, ErrorPrime> {
     return _task(
       payload,
-      (runEffect, success, error) =>
+      (runEffect, success, error, context) =>
         next(
           runEffect,
           (result: Result) => success(successTransform(result)),
-          (reason: Error) => error(errorTransform(reason))
+          (reason: Error) => error(errorTransform(reason)),
+          context
         ),
       label
     );
@@ -300,14 +316,15 @@ function _task<Arg, Inbound, InboundError, Result, Error>(
   ): Task<Arg, Inbound, InboundError, ResultPrime, Error | ErrorPrime> {
     return _task(
       payload,
-      (runEffect, success, error) =>
+      (runEffect, success, error, context) =>
         next(
           runEffect,
           (result: Result) => {
             const chainTask = chainTransform(result);
             return chainTask.run(runEffect, success, error);
           },
-          error
+          error,
+          context
         ),
       `Chain(${label})`
     );
@@ -367,7 +384,8 @@ export function all<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
     (
       runEffect,
       success: ($TupleMap<AllTasks, ExtractResult>) => mixed,
-      error
+      error,
+      context
     ) => {
       if (tasks.length === 0) {
         return success([]);
@@ -399,7 +417,7 @@ export function all<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
 
       return Promise.all(
         tasks.map((task, index) =>
-          task.run(runEffect, allSuccess(index), anyError)
+          task.run(runEffect, allSuccess(index), anyError, context)
         )
       );
     },
@@ -408,8 +426,9 @@ export function all<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
   );
 }
 
-type ExtractSettled = <R, E>(Task<*, *, *, R, E>) => 
-  ({| status: 'fulfilled', value: R |} | {|status: 'rejected', value: E |});
+type ExtractSettled = <R, E>(
+  Task<*, *, *, R, E>
+) => {|status: 'fulfilled', value: R|} | {|status: 'rejected', value: E|};
 
 /*
  * ## `Task.allSettled`
@@ -434,7 +453,8 @@ export function allSettled<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
     (
       runEffect,
       success: ($TupleMap<AllTasks, ExtractResult>) => mixed,
-      error
+      error,
+      context
     ) => {
       if (tasks.length === 0) {
         return success([]);
@@ -452,11 +472,13 @@ export function allSettled<AllTasks: $ReadOnlyArray<Task<mixed, mixed>>>(
         };
       }
 
-      return Promise.allSettled(
+      return (Promise: any).allSettled(
         tasks.map((task, index) =>
-          task.run(runEffect, 
-              onOneTaskFinish(index, 'fulfilled'), 
-              onOneTaskFinish(index, 'rejected')
+          task.run(
+            runEffect,
+            onOneTaskFinish(index, 'fulfilled'),
+            onOneTaskFinish(index, 'rejected'),
+            context
           )
         )
       );
