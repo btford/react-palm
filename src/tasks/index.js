@@ -1,5 +1,5 @@
 // @flow
-import {all, fromCallback, fromPromise} from './core';
+import {all, allSettled, fromCallback, fromPromise} from './core';
 export {reportTasksForTesting} from './core';
 export type {
   Task,
@@ -29,6 +29,7 @@ export * from './test-utils';
 // ```
 export default {
   all,
+  allSettled,
   fromCallback,
   fromPromise
 };
