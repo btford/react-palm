@@ -164,7 +164,7 @@ export function fromPromiseWithProgress<Arg, -Inbound, -InboundError>(
             (context ? v => (context: any).onProgress(onProgress(v)) : noop) ||
             noop
         }).then(success, error),
-      arg,
+      {arg, onProgress},
       label
     );
 
