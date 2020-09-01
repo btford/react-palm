@@ -1,4 +1,7 @@
 
+## [3.3.4] - Aug 31 2020
+- b8ef6ae add onProgress to fromPromiseWithProgress payload
+
 ## [3.3.3] - Aug 31 2020
 - 21897f7 export fromPromiseWithProgress
 
