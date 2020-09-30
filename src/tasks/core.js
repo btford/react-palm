@@ -321,7 +321,7 @@ function _task<Arg, Inbound, InboundError, Result, Error>(
           runEffect,
           (result: Result) => {
             const chainTask = chainTransform(result);
-            return chainTask.run(runEffect, success, error);
+            return chainTask.run(runEffect, success, error, context);
           },
           error,
           context
