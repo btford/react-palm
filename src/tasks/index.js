@@ -24,6 +24,7 @@ export {
   disableStackCapturing
 } from './redux';
 
+export {getGlobalTaskQueue} from './global';
 // In the future, test utils will not be exported from
 // this main bundle
 export * from './test-utils';
