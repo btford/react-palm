@@ -24,3 +24,5 @@ export declare function withTasks<State>(state: State, tasks: Task<any, any>[]):
 export declare function disableStackCapturing(): void;
 
 export declare function all<Success, Failure>(tasks: Task<Success, Failure>[]): Task<Success[], Failure>;
+
+export declare function getGlobalTaskQueue(): Task<any, any>[];
