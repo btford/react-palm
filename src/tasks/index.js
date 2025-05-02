@@ -16,6 +16,16 @@ export type {
   MixedTasks,
   EffectReport
 } from './core';
+
+// export individual functions
+export {
+  all,
+  allSettled,
+  fromCallback,
+  fromPromise,
+  fromPromiseWithProgress
+} from './core';
+
 export {taskCreator} from './legacy';
 export {
   taskMiddleware,
