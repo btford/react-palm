@@ -19,7 +19,7 @@
   "author": "Brian Ford <btford@umich.edu>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/btford/react-palm.git"
+    "url": "git+https://github.com/btford/react-palm.git"
   },
   "license": "MIT",
   "dependencies": {
