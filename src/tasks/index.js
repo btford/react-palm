@@ -29,18 +29,17 @@ export {getGlobalTaskQueue} from './global';
 // this main bundle
 export * from './test-utils';
 
-// This default export provides a nice alias:
 // ```
 // import {Task} from 'react-palm/tasks';
 // Task.all([...])
 // ```
 
-export const Task = {
+export const Tasks = {
   all,
   allSettled,
   fromCallback,
   fromPromise,
   fromPromiseWithProgress
-}
+};
 
-export default Task;
+export default Tasks;
